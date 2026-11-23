@@ -17,6 +17,10 @@ object ReminderEngine {
   if (current.completed || current.snoozes >= config.prefs.maxSnoozes || minutes !in 1..180) return null
   return current.copy(snoozes = current.snoozes + 1, snoozedUntil = now.plusSeconds(minutes * 60L).toEpochMilli())
  }
+ fun cancelSnooze(current: ActiveSession, now: Instant): ActiveSession? =
+  if (!current.completed && current.snoozedUntil?.let { it > now.toEpochMilli() } == true)
+   current.copy(snoozedUntil = null)
+  else null
  fun shouldEmit(event: ReminderEvent, smart: Boolean, lastActivity: Instant?, now: Instant, inactivityMinutes: Int): Boolean {
   if (!event.overdue || !smart || lastActivity == null) return true
   return java.time.Duration.between(lastActivity, now).seconds <= inactivityMinutes * 60L

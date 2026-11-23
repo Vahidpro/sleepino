@@ -21,14 +21,14 @@ The Actions workflow runs manually, for pull requests, and for version tags. A n
 
 ## Features
 
-- Single dashboard with an instant-derived bedtime countdown, work status, daily remaining free time, a weekly budget, interactive breakdowns, and a collapsible routine.
-- Independent weekly sleep, work, and exercise schedules; overnight intervals, work breaks, copying a day, target sleep duration or wake time, and date overrides.
-- Custom reminder stages, bounded overdue reminders, 5/10/15/custom snooze, duplicate-safe reported-bedtime confirmation, and undo.
+- A full-page bedtime countdown with a daytime sky, a starry night, and a red overdue state. Sleep and snooze actions appear during the last half hour and remain available after bedtime. Swipe horizontally for reports and select the week to show. Swipe down from the top for Settings.
+- Independent weekly sleep, work, and exercise schedules. Set a single bedtime and wake time for selected weekdays with the circular picker, or edit days individually. Overnight intervals, work breaks, target sleep duration, and date overrides are supported.
+- Custom reminder stages, bounded overdue reminders, cancellable snooze, duplicate-safe reported-bedtime confirmation, and icon-only undo.
 - AlarmManager scheduling with optional exact-alarm access, boot/timezone/clock rescheduling, and a WorkManager recovery sweep.
 - Optional activity-aware overdue suppression with scheduled fallback. Optional distracting-app awareness at reminder times, plus a shortcut to Android wellbeing settings.
 - An app-owned DND rule on Android 10+, preserving other rules. User-disabled or deleted rules are respected.
 - Room bedtime/routine history, DataStore configuration, JSON backup/restore through Android’s file picker, and a locally imported holiday update.
-- English/Persian, RTL/LTR, Estedad/system sans serif, independent holiday region and timezone, Persian numerals, Jalali dates, 12/24-hour clocks, light/dark/AMOLED, dynamic colors, and reduced motion.
+- English and Persian with RTL/LTR layouts, Estedad and system sans serif, automatic Persian digits in Persian, Jalali dates, 12/24-hour clocks, eight color presets, light/dark/AMOLED modes, dynamic colors, and reduced motion.
 - Bedtime and free-time home widgets, plus a Quick Settings sleep-confirmation tile.
 
 No production history or personal schedule is prefilled. Onboarding can be completed with sections unconfigured; schedules are saved only through explicit editing.
@@ -41,10 +41,14 @@ Lunar dates follow Iranian mappings, not the Saudi `HijrahDate` calendar. Publis
 
 Outside validated coverage, status is **unknown**, and the dashboard explicitly labels the budget provisional. Unknown days retain planned work rather than inventing holidays or asserting they are ordinary workdays. See [holiday provenance and updates](docs/HOLIDAYS.md).
 
+## Performance
+
+Responsive startup, swipes, and settings controls are product requirements. The home view refreshes at minute boundaries and at snooze expiration. It reuses daily and weekly schedule calculations between clock updates, and the reports page loads other weeks off the UI thread. Settings loads installed apps when their picker opens. Judge startup and gesture performance on a release build with R8 enabled.
+
 ## Verification
 
 The JVM time engine has automated tests for overlapping reservations, overnight work, sleep ownership, holidays/overrides, every week start, remaining budgets, 23/25-hour days, DST gaps/overlaps, date conversion, validity limits, and reminder transitions. Android compilation and lint should be run with the commands above. Device/emulator permission, OEM notification, DND, widget, and accessibility checks are listed in [the device checklist](docs/DEVICE_TESTING.md); no device certification is implied by source-level checks.
 
-See [architecture](docs/ARCHITECTURE.md), [platform behavior](docs/PLATFORM.md), [privacy](PRIVACY.md), and [third-party acknowledgments](NOTICE.md).
+See [visual design and motion](docs/DESIGN.md), [architecture](docs/ARCHITECTURE.md), [platform behavior](docs/PLATFORM.md), [privacy](PRIVACY.md), and [third-party acknowledgments](NOTICE.md).
 
 The application source is private and has no open-source license grant. Third-party files retain their individual licenses.

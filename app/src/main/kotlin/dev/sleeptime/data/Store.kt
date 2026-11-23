@@ -19,9 +19,10 @@ val AppJson = Json { ignoreUnknownKeys = false; encodeDefaults = true }
 @Singleton class ConfigurationStore @Inject constructor(@param:ApplicationContext private val context: Context) {
  private val key = stringPreferencesKey("configuration_v1")
  private val sessionKey = stringPreferencesKey("session_v1")
- val configuration = context.settingsStore.data.map { p ->
-  p[key]?.let { AppJson.decodeFromString<Configuration>(it) } ?: Configuration(prefs = Preferences(weekStart = if (context.resources.configuration.locales[0].language == "fa") 6 else 7, region = if (context.resources.configuration.locales[0].language == "fa") HolidayRegion.IRAN else HolidayRegion.NONE, persianNumerals = context.resources.configuration.locales[0].language == "fa", jalali = context.resources.configuration.locales[0].language == "fa"))
- }
+ val configuration = context.settingsStore.data.map { it[key] }.distinctUntilChanged()
+  .map { it?.let { json -> AppJson.decodeFromString<Configuration>(json) } ?: getDefault() }
+ val activeSession = context.settingsStore.data.map { it[sessionKey] }.distinctUntilChanged()
+  .map { it?.let { json -> AppJson.decodeFromString<ActiveSession>(json) } }
  suspend fun get(): Configuration = configuration.first()
  suspend fun update(transform: (Configuration) -> Configuration) {
   context.settingsStore.edit { p -> val old = p[key]?.let { AppJson.decodeFromString<Configuration>(it) } ?: getDefault(); p[key] = AppJson.encodeToString(transform(old)) }
@@ -31,7 +32,7 @@ val AppJson = Json { ignoreUnknownKeys = false; encodeDefaults = true }
   return Configuration(prefs = Preferences(weekStart = if (fa) 6 else 7, region = if (fa) HolidayRegion.IRAN else HolidayRegion.NONE, persianNumerals = fa, jalali = fa))
  }
  suspend fun replace(value: Configuration) { context.settingsStore.edit { it[key] = AppJson.encodeToString(value); it.remove(sessionKey) } }
- suspend fun session(): ActiveSession? = context.settingsStore.data.first()[sessionKey]?.let { AppJson.decodeFromString(it) }
+ suspend fun session(): ActiveSession? = activeSession.first()
  suspend fun setSession(value: ActiveSession?) { context.settingsStore.edit { if (value == null) it.remove(sessionKey) else it[sessionKey] = AppJson.encodeToString(value) } }
 }
 @Entity(tableName = "bedtimes") data class BedtimeEntity(@PrimaryKey val key: String, val ownerDate: String, val scheduled: Long, val confirmed: Long, val snoozes: Int) {

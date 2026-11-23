@@ -20,6 +20,7 @@ import dev.sleeptime.MainActivity
 import dev.sleeptime.R
 import dev.sleeptime.core.*
 import dev.sleeptime.data.*
+import dev.sleeptime.platform.localizedContext
 import dev.sleeptime.ui.clockText
 import dev.sleeptime.ui.duration
 import java.time.*
@@ -30,16 +31,18 @@ class BedtimeWidget: GlanceAppWidget() {
  override suspend fun provideGlance(context: Context,id: GlanceId) {
   val entry=EntryPointAccessors.fromApplication(context.applicationContext,WidgetEntryPoint::class.java)
   val config=entry.store().get();val now=entry.clock().instant();val occurrence=TimeEngine.activeSleep(config,now);val confirmed=entry.history().all().any {it.key==occurrence?.key}
-  val title=context.getString(if(confirmed)R.string.sleep_confirmed else R.string.widget_bedtime)
-  val timer=occurrence?.let {duration(context,Duration.between(now,it.start).seconds,config.prefs)}?:context.getString(R.string.not_configured)
-  val time=occurrence?.let {clockText(it.start,config.prefs,context.resources.configuration.locales[0])}.orEmpty()
+  val displayContext=localizedContext(context,config.prefs)
+  val locale=displayContext.resources.configuration.locales[0]
+  val title=displayContext.getString(if(confirmed)R.string.sleep_confirmed else R.string.widget_bedtime)
+  val timer=occurrence?.let {duration(displayContext,Duration.between(now,it.start).seconds,config.prefs)}?:displayContext.getString(R.string.not_configured)
+  val time=occurrence?.let {clockText(it.start,config.prefs,locale)}.orEmpty()
   provideContent {
    WidgetShell(config.prefs) {
     Text(title,style=TextStyle(fontSize=13.sp,fontWeight=FontWeight.Medium,color=ColorProvider(Color(0xFFBCA9F4))))
-    Spacer(GlanceModifier.height(10.dp));Text(if(confirmed)context.getString(R.string.rest_well)else timer,style=TextStyle(fontSize=22.sp,color=ColorProvider(widgetForeground())))
+    Spacer(GlanceModifier.height(10.dp));Text(if(confirmed)displayContext.getString(R.string.rest_well)else timer,style=TextStyle(fontSize=22.sp,color=ColorProvider(widgetForeground())))
     Spacer(GlanceModifier.height(6.dp));Text(time,style=TextStyle(fontSize=12.sp,color=ColorProvider(widgetSecondary())))
-    Text(context.getString(R.string.as_of,clockText(now,config.prefs,context.resources.configuration.locales[0])),style=TextStyle(fontSize=11.sp,color=ColorProvider(widgetSecondary())))
-    if(occurrence!=null && !confirmed) {Spacer(GlanceModifier.height(8.dp));Button(context.getString(R.string.go_to_sleep),onClick=actionStartActivity(Intent(context,MainActivity::class.java).setAction(MainActivity.ACTION_SLEEP)))}
+    Text(displayContext.getString(R.string.as_of,clockText(now,config.prefs,locale)),style=TextStyle(fontSize=11.sp,color=ColorProvider(widgetSecondary())))
+    if(occurrence!=null && !confirmed) {Spacer(GlanceModifier.height(8.dp));Button(displayContext.getString(R.string.go_to_sleep),onClick=actionStartActivity(Intent(context,MainActivity::class.java).setAction(MainActivity.ACTION_SLEEP)))}
    }
   }
  }
@@ -48,13 +51,15 @@ class BudgetWidget: GlanceAppWidget() {
  override val sizeMode=SizeMode.Responsive(setOf(DpSize(180.dp,120.dp),DpSize(280.dp,180.dp)))
  override suspend fun provideGlance(context: Context,id: GlanceId) {
   val entry=EntryPointAccessors.fromApplication(context.applicationContext,WidgetEntryPoint::class.java);val config=entry.store().get();val p=config.prefs;val now=entry.clock().instant();val date=now.atZone(p.zone()).toLocalDate()
+  val displayContext=localizedContext(context,p)
+  val locale=displayContext.resources.configuration.locales[0]
   val today=TimeEngine.budget(config,date,1,now,entry.holidays());val week=TimeEngine.budget(config,TimeEngine.weekStart(date,p.weekStart),7,now,entry.holidays())
   provideContent {
    WidgetShell(p) {
-    Text(context.getString(R.string.widget_budget),style=TextStyle(fontSize=13.sp,fontWeight=FontWeight.Medium,color=ColorProvider(Color(0xFF75CEB9))))
-    Spacer(GlanceModifier.height(8.dp));Text(duration(context,today.remainingFree.seconds,p),style=TextStyle(fontSize=22.sp,color=ColorProvider(widgetForeground())))
-    Spacer(GlanceModifier.height(6.dp));Text(context.getString(R.string.remaining_week,duration(context,week.remainingFree.seconds,p)),style=TextStyle(fontSize=12.sp,color=ColorProvider(widgetSecondary())))
-    Spacer(GlanceModifier.height(8.dp));Text(context.getString(R.string.as_of,clockText(now,p,context.resources.configuration.locales[0])),style=TextStyle(fontSize=11.sp,color=ColorProvider(widgetSecondary())))
+    Text(displayContext.getString(R.string.widget_budget),style=TextStyle(fontSize=13.sp,fontWeight=FontWeight.Medium,color=ColorProvider(Color(0xFF75CEB9))))
+    Spacer(GlanceModifier.height(8.dp));Text(duration(displayContext,today.remainingFree.seconds,p),style=TextStyle(fontSize=22.sp,color=ColorProvider(widgetForeground())))
+    Spacer(GlanceModifier.height(6.dp));Text(displayContext.getString(R.string.remaining_week,duration(displayContext,week.remainingFree.seconds,p)),style=TextStyle(fontSize=12.sp,color=ColorProvider(widgetSecondary())))
+    Spacer(GlanceModifier.height(8.dp));Text(displayContext.getString(R.string.as_of,clockText(now,p,locale)),style=TextStyle(fontSize=11.sp,color=ColorProvider(widgetSecondary())))
    }
   }
  }

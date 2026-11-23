@@ -8,7 +8,7 @@ import argparse, csv, datetime as dt, hashlib, json, pathlib, re
 def build(events_path, lunar_paths, year, revision):
     if not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise ValueError("An exact upstream commit SHA is required")
-    source = json.loads(pathlib.Path(events_path).read_text())
+    source = json.loads(pathlib.Path(events_path).read_text(encoding="utf-8"))
     rules = []
     for row in source["data"]:
         if row.get("type") != "Iran" or row.get("holiday") is not True:
@@ -28,7 +28,7 @@ def build(events_path, lunar_paths, year, revision):
         raise ValueError("Unexpected selected holiday count; review upstream")
     lunar = []
     for path in lunar_paths:
-        with open(path) as stream:
+        with open(path, encoding="utf-8", newline="") as stream:
             for row in csv.DictReader(stream):
                 start, end = dt.date.fromisoformat(row["start"]), dt.date.fromisoformat(row["end"])
                 complete = row.get("complete", "true").lower() == "true"

@@ -52,13 +52,17 @@ import java.time.*
  val dndEndMinutes: Int = 420,
  val dndFollowsSnooze: Boolean = false,
  val routineLeadMinutes: Int = 60,
- val distractionPackages: Set<String> = emptySet()
+ val distractionPackages: Set<String> = emptySet(),
+ val baseSleep: Boolean = true,
+ val baseBedtime: Int = 1380,
+ val baseWake: Int = 420
 ) {
  init {
   require(language in setOf("system", "en", "fa")); require(weekStart in 1..7)
   require(inactivityMinutes in 1..180 && repeatMinutes in 5..180 && maxRepeats in 0..20)
   require(snoozeMinutes in 1..180 && maxSnoozes in 0..20)
   require(dndStartOffset in -720..720 && dndEndMinutes in 0..1439 && routineLeadMinutes in 0..720)
+  require(baseBedtime in 0..1439 && baseWake in 0..1439)
   if (zoneId != "system") ZoneId.of(zoneId)
  }
  fun zone(): ZoneId = if (zoneId == "system") ZoneId.systemDefault() else ZoneId.of(zoneId)

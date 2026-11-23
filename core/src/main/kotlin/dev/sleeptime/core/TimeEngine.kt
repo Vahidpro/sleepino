@@ -7,20 +7,24 @@ object TimeEngine {
  // Gaps advance by the gap length; overlaps use the earlier offset, matching java.time.
  fun localInstant(date: LocalDate, minutes: Int, zone: ZoneId): Instant = date.atTime(LocalTime.of(minutes / 60, minutes % 60)).atZone(zone).toInstant()
  fun sleep(config: Configuration, owner: LocalDate): SleepOccurrence? {
-  val rule = config.sleep.firstOrNull { it.day == owner.dayOfWeek.value }
+  val rule = config.sleep.firstOrNull { it.day == owner.dayOfWeek.value }?.takeIf { it.enabled }
   val override = config.overrides.firstOrNull { it.date == owner.toString() }
-  if (override?.sleepEnabled == false || (override?.sleepEnabled != true && rule?.enabled != true)) return null
-  val bed = override?.bedtime ?: rule?.bedtime ?: return null
+  if (override?.sleepEnabled == false) return null
+  val isEnabled = override?.sleepEnabled == true || rule != null || config.prefs.baseSleep
+  if (!isEnabled) return null
+  val bed = override?.bedtime ?: rule?.bedtime ?: config.prefs.baseBedtime
+  val wake = override?.wake ?: rule?.wake ?: config.prefs.baseWake
   val zone = config.prefs.zone()
   val date = owner.plusDays(if (bed < 720) 1 else 0)
   val start = localInstant(date, bed, zone)
-  val wake = override?.wake ?: rule?.wake ?: 420
-  val end = if (rule?.useWakeTime != false) {
+  val useWake = rule?.useWakeTime ?: true
+  val duration = rule?.durationMinutes ?: 480
+  val end = if (useWake) {
    var d = date
    if (wake <= bed) d = d.plusDays(1)
    localInstant(d, wake, zone)
-  } else start.plusSeconds((rule.durationMinutes * 60).toLong())
-  return SleepOccurrence(owner, start, maxOf(start,end))
+  } else start.plusSeconds((duration * 60).toLong())
+  return SleepOccurrence(owner, start, maxOf(start, end))
  }
  fun occurrences(config: Configuration, now: Instant, days: Int = 10): List<SleepOccurrence> {
   val today = now.atZone(config.prefs.zone()).toLocalDate()
@@ -102,7 +106,8 @@ object TimeEngine {
   require(days in 1..366)
   val zone = config.prefs.zone(); val start = firstDate.atStartOfDay(zone).toInstant(); val end = firstDate.plusDays(days.toLong()).atStartOfDay(zone).toInstant()
   val dates = (0 until days).map { firstDate.plusDays(it.toLong()) }
-  val spans = dates.flatMap { resolvedDay(config, it, holidays) }
+  val spansByDay = dates.map { resolvedDay(config, it, holidays) }
+  val spans = spansByDay.flatten()
   // Mutually exclusive chart: sleep first, then work, then exercise. Free time uses the union.
   val assigned = mutableListOf<Span>(); val breakdown = mutableMapOf<Kind, Duration>()
   for (kind in listOf(Kind.SLEEP, Kind.WORK, Kind.EXERCISE)) {
@@ -111,12 +116,15 @@ object TimeEngine {
   }
   val free = subtract(listOf(Span(start, end, Kind.WORK)), assigned)
   val total = free.fold(Duration.ZERO) { d, s -> d + Duration.between(s.start, s.end) }
-  val remaining = free.mapNotNull { clip(it, maxOf(start, minOf(end, now)), end) }.fold(Duration.ZERO) { d, s -> d + Duration.between(s.start, s.end) }
-  return TimeBudget(start, end, total, remaining, breakdown, free,
-   dates.count { d -> resolvedDay(config, d, holidays).any { it.kind == Kind.WORK } },
+  return TimeBudget(start, end, total, remainingFree(free, now), breakdown, free,
+   spansByDay.count { day -> day.any { it.kind == Kind.WORK } },
    dates.count { d -> holidays.status(d, config.prefs.region) == HolidayState.HOLIDAY && config.overrides.firstOrNull { it.date == d.toString() }?.work == null && (rawActivity(config, d, Kind.WORK) + rawActivity(config, d.minusDays(1), Kind.WORK)).any { clip(it, d.atStartOfDay(zone).toInstant(), d.plusDays(1).atStartOfDay(zone).toInstant()) != null } },
    dates.filter { holidays.status(it, config.prefs.region) == HolidayState.UNKNOWN }.toSet())
  }
+ fun remainingFree(free: List<Span>, now: Instant): Duration =
+  free.fold(Duration.ZERO) { total, span ->
+   if (span.end > now) total + Duration.between(maxOf(now,span.start),span.end) else total
+  }
  fun activeOrNextWork(config: Configuration, now: Instant, holidays: HolidayProvider): Span? {
   val today = now.atZone(config.prefs.zone()).toLocalDate()
   return merge((0L..14L).flatMap { resolvedDay(config, today.plusDays(it), holidays) }.filter { it.kind == Kind.WORK }).firstOrNull { it.end > now }

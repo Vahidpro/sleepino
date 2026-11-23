@@ -16,9 +16,23 @@ fun previewState(prefs: Preferences=Preferences(zoneId="Asia/Tehran",theme=Theme
  val first=TimeEngine.weekStart(date,prefs.weekStart)
  return DashboardState(c,now,TimeEngine.activeSleep(c,now),false,TimeEngine.activeOrNextWork(c,now,h),TimeEngine.budget(c,date,1,now,h),TimeEngine.budget(c,first,7,now,h),(0L..6L).map{first.plusDays(it).let{d->d to TimeEngine.budget(c,d,1,now,h)}},emptyList(),emptyList(),date,null)
 }
-@Preview(name="Midnight",showBackground=true,widthDp=393,backgroundColor=0xFF0B1021)
-@Preview(name="Persian",locale="fa",showBackground=true,widthDp=393,backgroundColor=0xFF0B1021)
-@Preview(name="Large font",fontScale=1.7f,showBackground=true,widthDp=360)
-@Composable fun BedtimeHeroPreview(){val s=previewState();SleepTheme(s.config.prefs){Surface{Box(Modifier.padding(20.dp)){BedtimeHero(s,{},{},{})}}}}
+@Preview(name = "Midnight", showBackground = true, widthDp = 393, heightDp = 760)
+@Preview(name = "Persian", locale = "fa", showBackground = true, widthDp = 393, heightDp = 760)
+@Preview(name = "Large font", fontScale = 1.7f, showBackground = true, widthDp = 360, heightDp = 620)
+@Composable fun BedtimeHeroPreview() {
+ val sample = previewState()
+ val s = sample.copy(now = checkNotNull(sample.occurrence).start.minusSeconds(71 * 60L))
+ SleepTheme(s.config.prefs) {
+  BedtimeHero(s, {}, {}, {}, {}, {})
+ }
+}
+@Preview(name = "Settings visible", showBackground = true, widthDp = 393, heightDp = 760)
+@Composable fun BedtimeHeroSettingsPreview() {
+ val sample = previewState()
+ val s = sample.copy(now = checkNotNull(sample.occurrence).start.minusSeconds(71 * 60L))
+ SleepTheme(s.config.prefs) {
+  BedtimeHero(s, {}, {}, {}, {}, {}, initialShowSettings = true)
+ }
+}
 @Preview(name="Daylight",showBackground=true,widthDp=393)
 @Composable fun DaylightPreview(){val s=previewState(Preferences(zoneId="Asia/Tehran",theme=ThemeMode.LIGHT));SleepTheme(s.config.prefs){Surface{WeeklyCard(s.week,s.days,s.config.prefs,Modifier.padding(20.dp))}}}

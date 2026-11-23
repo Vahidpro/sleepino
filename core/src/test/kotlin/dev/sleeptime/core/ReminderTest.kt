@@ -9,6 +9,18 @@ class ReminderTest {
  @Test fun overdueRepeatsAreBounded(){val events=ReminderEngine.events(c,o,null);assertEquals(4,events.count{it.key.startsWith("repeat:")});assertTrue(events.all{it.at<o.end})}
  @Test fun completedSessionHasNoReminders(){assertTrue(ReminderEngine.events(c,o,ActiveSession(o.key,o.start.toEpochMilli(),completed=true)).isEmpty())}
  @Test fun snoozeDoesNotChangeRecurringBedtime(){val now=o.start;val session=ReminderEngine.snooze(c,ActiveSession(o.key,o.start.toEpochMilli()),now,10)!!;val events=ReminderEngine.events(c,o,session);assertEquals(o.start.plusSeconds(600),events.first{it.key.startsWith("snooze")}.at);assertEquals(1380,c.sleep.single().bedtime)}
+ @Test fun cancellingSnoozeRestoresPendingRemindersWithoutReplayingDeliveredOnes() {
+  val current=ActiveSession(o.key,o.start.toEpochMilli(),emitted=setOf("stage:1"))
+  val snoozed=ReminderEngine.snooze(c,current,o.start.minusSeconds(1800),20)!!
+  val restored=ReminderEngine.cancelSnooze(snoozed,o.start.minusSeconds(900))!!
+  assertNull(restored.snoozedUntil)
+  assertEquals(1,restored.snoozes)
+  val keys=ReminderEngine.events(c,o,restored).map { it.key }
+  assertTrue("stage:2" in keys)
+  assertFalse("stage:1" in keys)
+  assertFalse(keys.any { it.startsWith("snooze:") })
+  assertNull(ReminderEngine.cancelSnooze(snoozed,o.start))
+ }
  @Test fun snoozeLimitEnforced(){assertNull(ReminderEngine.snooze(c,ActiveSession(o.key,o.start.toEpochMilli(),snoozes=3),o.start,10))}
  @Test fun alreadyDeliveredEventsAreNotRepeated(){val events=ReminderEngine.events(c,o,ActiveSession(o.key,o.start.toEpochMilli(),emitted=setOf("stage:1")));assertFalse(events.any{it.key=="stage:1"})}
  @Test fun deniedActivityAccessFallsBackToScheduled(){val event=ReminderEngine.events(c,o,null).last();assertTrue(ReminderEngine.shouldEmit(event,true,null,event.at,20))}

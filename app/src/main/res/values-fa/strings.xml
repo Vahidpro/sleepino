@@ -3,7 +3,7 @@
  <string name="your_evening">کمی زمان بیشتر برای خودت</string>
  <string name="dashboard">روزت، با آرامش</string>
  <string name="settings">تنظیمات</string>
- <string name="statistics">ریتم زندگی تو</string>
+ <string name="statistics">گزارش و آمار</string>
  <string name="back">بازگشت</string>
  <string name="close">بستن</string>
  <string name="save">ذخیره تغییرات</string>
@@ -14,7 +14,7 @@
  <string name="add">افزودن</string>
  <string name="move_up">بالاتر</string>
  <string name="move_down">پایین تر</string>
- <string name="bedtime_countdown">تا وقت خواب</string>
+ <string name="bedtime_countdown">مونده تا خواب</string>
  <string name="bedtime_overdue">از وقت خوابت گذشته</string>
  <string name="tonight">وقت خواب بعدی · %1$s</string>
  <string name="reported_bedtime">زمان خواب ثبت شده</string>
@@ -40,6 +40,8 @@
  <string name="remaining_today">زمان باقی مونده امروز</string>
  <string name="total_today">کل امروز · %1$s</string>
  <string name="hours_minutes">%1$s ساعت و %2$s دقیقه</string>
+ <string name="hours_only">%1$s ساعت</string>
+ <string name="minutes_only">%1$s دقیقه</string>
  <string name="hours_short">%1$s س</string>
  <string name="minutes_short">%1$s د</string>
  <string name="week_title">این هفته، با فرصت نفس کشیدن</string>
@@ -83,6 +85,12 @@
  <string name="exercise_schedule">برنامه ورزش</string>
  <string name="reminder_stages">مراحل یادآوری</string>
  <string name="smart_reminders">یادآور بر اساس فعالیت</string>
+ <string name="base_sleep">ساعت پایه برای روزهای تنظیم‌نشده</string>
+ <string name="base_sleep_explanation">برای روزهایی که در برنامه خواب مشخص نشده‌اند، از ساعت پایه خواب و بیداری استفاده می‌شود.</string>
+ <string name="base_bedtime">ساعت خواب پایه</string>
+ <string name="base_wake">ساعت بیداری پایه</string>
+ <string name="base_bedtime_hint">پایه: %s</string>
+ <string name="base_sleep_active_hint">روزهای بدون برنامه از ساعت خواب پایه (%s) استفاده می‌کنند.</string>
  <string name="smart_explanation">وقتی نوبت یادآوری برسه فعالیت اخیر گوشی بررسی میشه. بدون دسترسی، یادآور عادی ادامه داره. بی فعالیتی به معنی خوابیدن نیست.</string>
  <string name="inactivity">آستانه بی فعالیتی (دقیقه)</string>
  <string name="repeat_interval">فاصله یادآور بعد خواب (دقیقه)</string>
@@ -210,4 +218,31 @@
  <string name="sleep_disabled">این شب برنامه خواب نداره</string>
  <string name="minimum_reminder">حفظ یک یادآور برنامه ریزی شده در وقت خواب</string>
  <string name="snoozed_until">تعویق تا %1$s</string>
+ <string name="cancel_snooze">لغو تعویق</string>
+ <string name="same_sleep_schedule">برنامهٔ خواب مشترک</string>
+ <string name="apply_selected_days">اعمال برای روزهای انتخاب‌شده</string>
+ <string name="edit_each_day">ویرایش جداگانهٔ روزها</string>
+ <string name="time_keyboard">وارد کردن زمان با صفحه‌کلید</string>
+ <string name="time_dial">انتخاب زمان با ساعت عقربه‌ای</string>
+ <string name="theme_presets">پالت‌های رنگی</string>
+ <string name="preset_rose">رز</string>
+ <string name="preset_amber">کهربایی</string>
+ <string name="preset_jade">یشمی</string>
+ <string name="preset_coral">مرجانی</string>
+ <string name="preset_slate">طوسی‌آبی</string>
+ <string name="bedtime_time_parts">%1$s و %2$s</string>
+ <plurals name="bedtime_hours">
+  <item quantity="one">%1$s ساعت</item>
+  <item quantity="other">%1$s ساعت</item>
+ </plurals>
+ <plurals name="bedtime_minutes">
+  <item quantity="one">%1$s دقیقه</item>
+  <item quantity="other">%1$s دقیقه</item>
+ </plurals>
+ <string name="work_day">روز کاری</string>
+ <string name="rest_day">روز استراحت</string>
+ <string name="choose_week">انتخاب هفته</string>
+ <string name="week_date_range">%1$s تا %2$s</string>
+ <string name="report_week_budget">بودجهٔ زمانی هفته</string>
+ <string name="report_week_remaining">زمان باقی‌مانده · %1$s</string>
 </resources>

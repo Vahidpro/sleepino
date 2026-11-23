@@ -28,18 +28,18 @@ import kotlinx.coroutines.sync.withLock
   alarm.cancel(pending(ACTION_ALARM))
   val config = store.get(); val now = clock.instant()
   if (!config.prefs.notifications && !config.prefs.dnd) { dnd.setActive(false); return }
-  val done = history.all().map { it.key }.toSet()
+  val reported = history.all().associateBy { it.key }
   val stored = store.session()
   val candidates = mutableListOf<Candidate>()
   var dndActiveNow = false
   if(!config.prefs.dnd) dnd.setActive(false)
   for (occurrence in TimeEngine.occurrences(config,now)) {
-   if (occurrence.key !in done && config.prefs.notifications) {
+   if (occurrence.key !in reported && config.prefs.notifications) {
     val session = stored?.takeIf { it.key == occurrence.key && it.scheduled == occurrence.start.toEpochMilli() }
     ReminderEngine.events(config,occurrence,session).filter { it.at > now }.forEach { candidates += Candidate(it.at,occurrence.key,it.key) }
    }
    if (config.prefs.dnd) {
-    val reportedStart=history.all().firstOrNull {it.key==occurrence.key}?.let {Instant.ofEpochMilli(it.confirmed)}
+    val reportedStart=reported[occurrence.key]?.let {Instant.ofEpochMilli(it.confirmed)}
     val nominalStart=occurrence.start.plusSeconds(config.prefs.dndStartOffset * 60L)
     val start = minOf(nominalStart,reportedStart?:nominalStart).let { if(config.prefs.dndFollowsSnooze && stored?.key==occurrence.key && stored.snoozedUntil != null) maxOf(it,Instant.ofEpochMilli(stored.snoozedUntil!!)) else it }
     var end = TimeEngine.localInstant(start.atZone(config.prefs.zone()).toLocalDate(),config.prefs.dndEndMinutes,config.prefs.zone())
@@ -90,7 +90,7 @@ import kotlinx.coroutines.sync.withLock
   if(config.prefs.dnd) dnd.setActive(true)
   scheduleLocked(); refreshWidgets(context); occurrence.key
  }
- suspend fun undo(key: String) = mutex.withLock { history.undo(key); store.setSession(store.session()?.copy(completed=false)); scheduleLocked(); refreshWidgets(context) }
+ suspend fun undo(key: String) = mutex.withLock { history.undo(key); store.session()?.takeIf { it.key == key }?.let { store.setSession(it.copy(completed=false)) }; scheduleLocked(); refreshWidgets(context) }
  suspend fun snooze(minutes: Int? = null, owner: String? = null): Boolean = mutex.withLock {
   val config = store.get(); val now = clock.instant()
   val occurrence = TimeEngine.activeSleep(config,now) ?: return@withLock false
@@ -102,6 +102,18 @@ import kotlinx.coroutines.sync.withLock
   store.setSession(next); notices.dismiss()
   if(config.prefs.dndFollowsSnooze) dnd.setActive(false)
   scheduleLocked(); refreshWidgets(context); true
+ }
+ suspend fun cancelSnooze(key: String) = mutex.withLock {
+  val config = store.get()
+  val now = clock.instant()
+  val occurrence = TimeEngine.activeSleep(config,now) ?: return@withLock
+  if (occurrence.key != key) return@withLock
+  val current = store.session()?.takeIf { it.key == key && it.scheduled == occurrence.start.toEpochMilli() }
+   ?: return@withLock
+  val restored = ReminderEngine.cancelSnooze(current,now) ?: return@withLock
+  store.setSession(restored)
+  scheduleLocked()
+  refreshWidgets(context)
  }
  companion object { const val ACTION_ALARM = "dev.sleeptime.ALARM" }
 }

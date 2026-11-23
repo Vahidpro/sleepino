@@ -3,7 +3,7 @@
  <string name="your_evening">A little more time for you</string>
  <string name="dashboard">Your day, in balance</string>
  <string name="settings">Settings</string>
- <string name="statistics">Your rhythm</string>
+ <string name="statistics">Reports &amp; statistics</string>
  <string name="back">Back</string>
  <string name="close">Close</string>
  <string name="save">Save changes</string>
@@ -14,8 +14,8 @@
  <string name="add">Add</string>
  <string name="move_up">Move up</string>
  <string name="move_down">Move down</string>
- <string name="bedtime_countdown">UNTIL BEDTIME</string>
- <string name="bedtime_overdue">PAST BEDTIME</string>
+ <string name="bedtime_countdown">Until bedtime</string>
+ <string name="bedtime_overdue">Past bedtime</string>
  <string name="tonight">Your next bedtime · %1$s</string>
  <string name="reported_bedtime">Reported bedtime</string>
  <string name="rest_well">Rest well. You made time for yourself.</string>
@@ -31,15 +31,17 @@
  <string name="setup_sleep_hint">Set your bedtime to see a live countdown.</string>
  <string name="setup_sleep">Set sleep schedule</string>
  <string name="work">Work</string>
- <string name="work_remaining">UNTIL YOU CLOCK OUT</string>
+ <string name="work_remaining">Work remaining</string>
  <string name="next_shift">Next shift · %1$s</string>
  <string name="shift_ends">Finishes at %1$s</string>
  <string name="day_off">Time off</string>
  <string name="no_work">No work scheduled</string>
- <string name="free_today">YOUR FREE TIME</string>
+ <string name="free_today">Free time today</string>
  <string name="remaining_today">Still yours today</string>
  <string name="total_today">Total today · %1$s</string>
  <string name="hours_minutes">%1$s h %2$s m</string>
+ <string name="hours_only">%1$s h</string>
+ <string name="minutes_only">%1$s m</string>
  <string name="hours_short">%1$s h</string>
  <string name="minutes_short">%1$s min</string>
  <string name="week_title">A week with breathing room</string>
@@ -83,6 +85,12 @@
  <string name="exercise_schedule">Exercise schedule</string>
  <string name="reminder_stages">Reminder stages</string>
  <string name="smart_reminders">Activity-aware reminders</string>
+ <string name="base_sleep">Base sleep for unconfigured days</string>
+ <string name="base_sleep_explanation">Applies base bedtime and wake time to days without a configured sleep schedule.</string>
+ <string name="base_bedtime">Base bedtime</string>
+ <string name="base_wake">Base wake time</string>
+ <string name="base_bedtime_hint">Base: %s</string>
+ <string name="base_sleep_active_hint">Unconfigured days use base bedtime (%s).</string>
  <string name="smart_explanation">Checks recent device activity when a reminder is due. With no usage access, scheduled reminders continue. Inactivity is never proof of sleep.</string>
  <string name="inactivity">Inactivity threshold (minutes)</string>
  <string name="repeat_interval">Overdue interval (minutes)</string>
@@ -210,4 +218,31 @@
  <string name="sleep_disabled">No bedtime on this night</string>
  <string name="minimum_reminder">Keep one scheduled reminder at bedtime</string>
  <string name="snoozed_until">Snoozed until %1$s</string>
+ <string name="cancel_snooze">Cancel snooze</string>
+ <string name="same_sleep_schedule">Same sleep schedule</string>
+ <string name="apply_selected_days">Apply to selected days</string>
+ <string name="edit_each_day">Edit individual days</string>
+ <string name="time_keyboard">Enter time with keyboard</string>
+ <string name="time_dial">Choose time on the dial</string>
+ <string name="theme_presets">Color presets</string>
+ <string name="preset_rose">Rose</string>
+ <string name="preset_amber">Amber</string>
+ <string name="preset_jade">Jade</string>
+ <string name="preset_coral">Coral</string>
+ <string name="preset_slate">Slate</string>
+ <string name="bedtime_time_parts">%1$s and %2$s</string>
+ <plurals name="bedtime_hours">
+  <item quantity="one">%1$s hour</item>
+  <item quantity="other">%1$s hours</item>
+ </plurals>
+ <plurals name="bedtime_minutes">
+  <item quantity="one">%1$s minute</item>
+  <item quantity="other">%1$s minutes</item>
+ </plurals>
+ <string name="work_day">Work day</string>
+ <string name="rest_day">Rest day</string>
+ <string name="choose_week">Select week</string>
+ <string name="week_date_range">%1$s – %2$s</string>
+ <string name="report_week_budget">Weekly time budget</string>
+ <string name="report_week_remaining">Remaining time · %1$s</string>
 </resources>
