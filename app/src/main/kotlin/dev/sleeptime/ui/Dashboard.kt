@@ -512,6 +512,17 @@ internal fun SkyIllustration(
   label = "cloud-drift-2"
  )
 
+ val morningFlight by if (reduced) remember { mutableFloatStateOf(0.48f) }
+ else transition.animateFloat(
+  initialValue = 0f,
+  targetValue = 1f,
+  animationSpec = infiniteRepeatable(
+   animation = tween(durationMillis = 14000, easing = LinearEasing),
+   repeatMode = RepeatMode.Restart
+  ),
+  label = "morning-flight"
+ )
+
  Box(modifier = modifier) {
   Canvas(modifier = Modifier.fillMaxSize()) {
    if (size.minDimension <= 0f) return@Canvas
@@ -622,6 +633,23 @@ internal fun SkyIllustration(
         color = Color.White.copy(alpha = .22f),
         radius = (2.2f + idx % 2).dp.toPx(),
         center = Offset(size.width * pt.first, size.height * pt.second + drift)
+       )
+      }
+     }
+
+     // Gliding morning birds with gentle wing beats
+     if (phase == SkyPhase.MORNING) {
+      val flightAlpha = (if (reduced) 0.34f else sin(morningFlight * PI).toFloat().coerceIn(0f, 1f) * 0.42f)
+      val flockOffsets = listOf(0f to 0f, -.075f to -.055f, -.13f to .045f)
+      val leadX = size.width * (.10f + .78f * morningFlight)
+      val leadY = size.height * (.28f - .06f * sin(morningFlight * PI).toFloat())
+      for ((idx, rel) in flockOffsets.withIndex()) {
+       val flap = if (reduced) 0.45f else sin(morningFlight * 2 * PI * 7 + idx * 1.15f).toFloat()
+       drawMorningBird(
+        center = Offset(leadX + size.width * rel.first, leadY + size.height * rel.second),
+        wingSpan = minOf((9.5f - idx * 1.2f).dp.toPx(), radius * .13f),
+        flap = flap,
+        color = Color(0xFF153D5E).copy(alpha = flightAlpha * (1f - idx * .15f))
        )
       }
      }
@@ -834,29 +862,60 @@ private fun DrawScope.drawSparkleStar(center: Offset, r: Float, color: Color) {
  drawPath(starPath, color)
 }
 
+private fun DrawScope.drawMorningBird(
+ center: Offset,
+ wingSpan: Float,
+ flap: Float,
+ color: Color
+) {
+ val tipY = center.y - wingSpan * (.22f + .24f * flap)
+ val ctrlY = center.y - wingSpan * (.48f + .16f * flap)
+ val path = Path().apply {
+  moveTo(center.x - wingSpan, tipY)
+  quadraticTo(center.x - wingSpan * .45f, ctrlY, center.x, center.y)
+  quadraticTo(center.x + wingSpan * .45f, ctrlY, center.x + wingSpan, tipY)
+ }
+ drawPath(
+  path = path,
+  color = color,
+  style = Stroke(width = 1.9.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+ )
+}
+
 private fun DrawScope.drawSoftCloud(
  center: Offset,
  scale: Float,
  baseColor: Color,
  highlightColor: Color
 ) {
- val base = Path().apply {
-  addOval(Rect(Offset(center.x - .52f * scale, center.y + .02f * scale), scale * .30f))
-  addOval(Rect(Offset(center.x + .46f * scale, center.y + .06f * scale), scale * .24f))
-  addOval(Rect(Offset(center.x - .04f * scale, center.y - .16f * scale), scale * .44f))
-  addRoundRect(
-   RoundRect(
-    Rect(center.x - scale * .96f, center.y - scale * .04f, center.x + scale * .92f, center.y + scale * .38f),
-    CornerRadius(scale * .22f)
-   )
+ val bottom = center.y + scale * .36f
+ val path = Path().apply {
+  moveTo(center.x - scale * .76f, bottom)
+  cubicTo(
+   center.x - scale * 1.04f, bottom,
+   center.x - scale * .94f, center.y - scale * .22f,
+   center.x - scale * .52f, center.y - scale * .18f
   )
+  cubicTo(
+   center.x - scale * .40f, center.y - scale * .64f,
+   center.x + scale * .28f, center.y - scale * .62f,
+   center.x + scale * .40f, center.y - scale * .16f
+  )
+  cubicTo(
+   center.x + scale * .78f, center.y - scale * .24f,
+   center.x + scale * 1.04f, bottom,
+   center.x + scale * .76f, bottom
+  )
+  close()
  }
- drawPath(base, baseColor)
-
- val cap = Path().apply {
-  addOval(Rect(Offset(center.x - .04f * scale, center.y - .18f * scale), scale * .38f))
- }
- drawPath(cap, highlightColor)
+ drawPath(
+  path = path,
+  brush = Brush.verticalGradient(
+   colors = listOf(highlightColor, baseColor),
+   startY = center.y - scale * .54f,
+   endY = bottom
+  )
+ )
 }
 
 internal fun Modifier.hideOutgoingContent(outgoing: Boolean): Modifier =

@@ -1,37 +1,44 @@
-name: Android verification and build
+name: Android CI
+
 on:
   workflow_dispatch:
   pull_request:
   push:
-    tags: ['v*']
+    branches:
+      - main
+
 permissions:
   contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Install platform
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install platform and build-tools
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
       - name: Verify wrapper and run checks
         run: |
           chmod +x gradlew
           ./gradlew :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: sleepino-debug
           path: app/build/outputs/apk/debug/*.apk
-      - name: Tagged unsigned release
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: ./gradlew :app:assembleRelease
-      - uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/v')
-        with:
-          name: sleepino-unsigned-release
-          path: app/build/outputs/apk/release/*.apk

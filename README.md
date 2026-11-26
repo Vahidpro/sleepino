@@ -15,9 +15,14 @@ From a terminal:
 ./gradlew :app:assembleDebug
 ```
 
-On Windows use `gradlew.bat`. The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. No signing secrets are needed. For an unsigned release use `./gradlew :app:assembleRelease`; configure your own signing for distribution. Branding lives in `app/src/main/res/values*/strings.xml`, the launcher resources, and `ui/Design.kt`.
+On Windows use `gradlew.bat`. The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. No signing secrets are needed. For a local release build use `./gradlew :app:assembleRelease`.
 
-The Actions workflow runs manually, for pull requests, and for version tags. A normal source push does not automatically build an APK. Start **Android verification and build → Run workflow** whenever you want an artifact.
+### CI/CD and Releases
+
+- **Android CI (`android.yml`)**: Runs automatically on pull requests and pushes to `main`. Executes unit tests (`:core:test`, `:app:testDebugUnitTest`), lint (`:app:lintDebug`), and builds the debug APK artifact.
+- **Release APK (`release.yml`)**: Automatically generates and attaches the release APK (`sleepino-<tag>.apk`) to GitHub Releases whenever a release is published or a tag starting with `v*` (e.g. `v0.1.0`) is pushed. Can also be triggered manually via `workflow_dispatch`.
+  - If GitHub Secrets (`KEYSTORE_BASE64`, `KEY_ALIAS`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD`) are configured, the APK is signed with your production keystore.
+  - If secrets are omitted, the workflow automatically generates a release signing key so that the published APK is immediately installable on Android devices.
 
 ## Features
 

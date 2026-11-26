@@ -1,0 +1,201 @@
+name: Release APK
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag (e.g. v0.1.0). If empty, auto-detects from tag or app version'
+        required: false
+        default: ''
+
+concurrency:
+  group: release-${{ github.ref_name || github.event.release.tag_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Android Platform and Build Tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Determine Release Tag
+        id: tag_info
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          elif [ "${{ github.event_name }}" = "push" ] && [ -n "${{ github.ref_name }}" ]; then
+            TAG="${{ github.ref_name }}"
+          elif [ -n "${{ inputs.tag_name }}" ]; then
+            TAG="${{ inputs.tag_name }}"
+          else
+            GIT_TAG=$(git describe --tags --exact-match 2>/dev/null || echo "")
+            if [ -n "$GIT_TAG" ]; then
+              TAG="$GIT_TAG"
+            else
+              VERSION_NAME=$(grep 'versionName = ' app/build.gradle.kts | head -n 1 | sed 's/.*"\(.*\)".*/\1/')
+              TAG="v${VERSION_NAME:-0.1.0}"
+            fi
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Selected release tag: $TAG"
+
+      - name: Run verification checks
+        run: |
+          chmod +x gradlew
+          ./gradlew :core:test :app:testDebugUnitTest :app:lintDebug
+
+      - name: Build Release APK
+        run: ./gradlew :app:assembleRelease
+
+      - name: Sign and Prepare APK
+        id: sign_apk
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          TAG: ${{ steps.tag_info.outputs.tag }}
+        run: |
+          UNSIGNED_APK=$(find app/build/outputs/apk/release -type f -name "*.apk" | head -n 1)
+          if [ -z "$UNSIGNED_APK" ]; then
+            echo "::error::No release APK found in app/build/outputs/apk/release"
+            exit 1
+          fi
+          echo "Found built APK: $UNSIGNED_APK"
+
+          OUTPUT_DIR="app/build/outputs/apk/release"
+          APK_NAME="sleepino-${TAG}.apk"
+          FINAL_APK="${OUTPUT_DIR}/${APK_NAME}"
+
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::apksigner not found in $ANDROID_HOME/build-tools"
+            exit 1
+          fi
+          echo "Using apksigner at: $APKSIGNER"
+
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEY_ALIAS" ]; then
+            echo "Signing APK with repository keystore secrets..."
+            KEYSTORE_FILE="/tmp/release.keystore"
+            echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_FILE"
+
+            "$APKSIGNER" sign \
+              --ks "$KEYSTORE_FILE" \
+              --ks-key-alias "$KEY_ALIAS" \
+              --ks-pass "pass:$KEYSTORE_PASSWORD" \
+              --key-pass "pass:${KEY_PASSWORD:-$KEYSTORE_PASSWORD}" \
+              --out "$FINAL_APK" \
+              "$UNSIGNED_APK"
+
+            rm -f "$KEYSTORE_FILE"
+            echo "APK successfully signed with production keystore."
+          else
+            echo "No custom keystore secrets found. Signing with auto-generated release key..."
+            TEMP_KEYSTORE="/tmp/temp-release.keystore"
+            keytool -genkeypair -v \
+              -keystore "$TEMP_KEYSTORE" \
+              -alias sleepino \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass sleepinopass \
+              -keypass sleepinopass \
+              -dname "CN=Sleepino, O=Sleepino, C=US"
+
+            "$APKSIGNER" sign \
+              --ks "$TEMP_KEYSTORE" \
+              --ks-key-alias sleepino \
+              --ks-pass "pass:sleepinopass" \
+              --key-pass "pass:sleepinopass" \
+              --out "$FINAL_APK" \
+              "$UNSIGNED_APK"
+
+            rm -f "$TEMP_KEYSTORE"
+            echo "APK successfully signed with auto-generated key."
+
+            echo "### ℹ️ APK Signing Note" >> $GITHUB_STEP_SUMMARY
+            echo "The release APK was signed using an auto-generated key because \`KEYSTORE_BASE64\` and \`KEY_ALIAS\` were not set in repository secrets." >> $GITHUB_STEP_SUMMARY
+            echo "The APK is installable on Android devices. To use an official release key, configure the following GitHub Secrets:" >> $GITHUB_STEP_SUMMARY
+            echo "- \`KEYSTORE_BASE64\`: Base64 string of your .keystore/.jks file" >> $GITHUB_STEP_SUMMARY
+            echo "- \`KEY_ALIAS\`: Key alias" >> $GITHUB_STEP_SUMMARY
+            echo "- \`KEYSTORE_PASSWORD\`: Keystore password" >> $GITHUB_STEP_SUMMARY
+            echo "- \`KEY_PASSWORD\`: Key password (optional if same as keystore password)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "Verifying APK..."
+          "$APKSIGNER" verify --verbose "$FINAL_APK"
+
+          echo "apk_path=$FINAL_APK" >> $GITHUB_OUTPUT
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+
+      - name: Upload APK to Actions Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sleepino-${{ steps.tag_info.outputs.tag }}-apk
+          path: ${{ steps.sign_apk.outputs.apk_path }}
+          retention-days: 90
+
+      - name: Publish APK to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APK_PATH: ${{ steps.sign_apk.outputs.apk_path }}
+          TAG: ${{ steps.tag_info.outputs.tag }}
+        run: |
+          if [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then
+            echo "::error::APK file does not exist at $APK_PATH"
+            exit 1
+          fi
+
+          NOTES_FILE=""
+          if [ -f "RELEASE_NOTES.md" ]; then
+            NOTES_FILE="RELEASE_NOTES.md"
+            echo "Using release notes from RELEASE_NOTES.md"
+          fi
+
+          echo "Publishing $APK_PATH to GitHub Release ($TAG)..."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG exists. Uploading APK asset..."
+            gh release upload "$TAG" "$APK_PATH" --clobber
+            if [ -n "$NOTES_FILE" ]; then
+              echo "Updating release notes with $NOTES_FILE..."
+              gh release edit "$TAG" --notes-file "$NOTES_FILE"
+            fi
+          else
+            echo "Release $TAG does not exist. Creating release with notes and uploading APK..."
+            if [ -n "$NOTES_FILE" ]; then
+              gh release create "$TAG" "$APK_PATH" \
+                --title "Sleepino $TAG" \
+                --notes-file "$NOTES_FILE"
+            else
+              gh release create "$TAG" "$APK_PATH" \
+                --title "Sleepino $TAG" \
+                --generate-notes
+            fi
+          fi
+          echo "Release APK successfully published to GitHub Release $TAG!"

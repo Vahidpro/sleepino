@@ -30,5 +30,7 @@ fun previewState(prefs: Preferences=Preferences(zoneId="Asia/Tehran",theme=Theme
 @Composable fun DaylightPreview(){val s=previewState(Preferences(zoneId="Asia/Tehran",theme=ThemeMode.LIGHT));SleepTheme(s.config.prefs){Surface{WeeklyCard(s.week,s.days,s.config,isCurrent=true,Modifier.padding(20.dp))}}}
 @Preview(name="Dawn Sky",showBackground=true,widthDp=393,heightDp=760)
 @Composable fun DawnHeroPreview(){val s=previewState().let{it.copy(now=LocalDateTime.of(2026,11,17,5,45).atZone(it.config.prefs.zone()).toInstant())};SleepTheme(s.config.prefs){BedtimeHero(s,{},{},{},{},{})}}
+@Preview(name="Morning Sky",showBackground=true,widthDp=393,heightDp=760)
+@Composable fun MorningHeroPreview(){val s=previewState().let{it.copy(now=LocalDateTime.of(2026,11,17,8,30).atZone(it.config.prefs.zone()).toInstant())};SleepTheme(s.config.prefs){BedtimeHero(s,{},{},{},{},{})}}
 @Preview(name="Golden Hour Sky",showBackground=true,widthDp=393,heightDp=760)
 @Composable fun GoldenHourHeroPreview(){val s=previewState().let{it.copy(now=LocalDateTime.of(2026,11,17,16,45).atZone(it.config.prefs.zone()).toInstant())};SleepTheme(s.config.prefs){BedtimeHero(s,{},{},{},{},{})}}
