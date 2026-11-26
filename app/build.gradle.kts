@@ -7,10 +7,10 @@ plugins {
  alias(libs.plugins.hilt)
 }
 android {
- namespace = "dev.sleeptime"
+ namespace = "pasac.sleepino"
  compileSdk = 36
  defaultConfig {
-  applicationId = "dev.sleeptime"
+  applicationId = "pasac.sleepino"
   minSdk = 26
   targetSdk = 36
   versionCode = 1
