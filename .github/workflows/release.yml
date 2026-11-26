@@ -67,10 +67,10 @@ jobs:
       - name: Run verification checks
         run: |
           chmod +x gradlew
-          ./gradlew :core:test :app:testDebugUnitTest :app:lintDebug
+          ./gradlew -Dorg.gradle.java.home="$JAVA_HOME" :core:test :app:testDebugUnitTest :app:lintDebug
 
       - name: Build Release APK
-        run: ./gradlew :app:assembleRelease
+        run: ./gradlew -Dorg.gradle.java.home="$JAVA_HOME" :app:assembleRelease
 
       - name: Sign and Prepare APK
         id: sign_apk
