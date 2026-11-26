@@ -1,7 +1,9 @@
 package dev.sleeptime.ui
 import android.content.res.Configuration
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -166,6 +168,19 @@ class PresentationTest {
   compose.onNodeWithText(year, substring = true).assertDoesNotExist()
   compose.onNodeWithText(context.getString(R.string.work_day)).assertDoesNotExist()
   compose.onNodeWithText(expectedTime).assertDoesNotExist()
+ }
+
+ @Test fun skyIllustrationRendersAllPhasesWithoutErrors() {
+  val phase = mutableStateOf(SkyPhase.DAWN)
+  compose.setContent {
+   SleepTheme(Preferences()) {
+    SkyIllustration(phase = phase.value, modifier = Modifier.fillMaxSize())
+   }
+  }
+  SkyPhase.entries.forEach { target ->
+   compose.runOnIdle { phase.value = target }
+   compose.waitForIdle()
+  }
  }
 
  @Test fun durationOmitsZeroMinutesInPersian() {
