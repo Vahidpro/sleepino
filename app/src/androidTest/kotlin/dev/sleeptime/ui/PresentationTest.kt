@@ -131,6 +131,43 @@ class PresentationTest {
   compose.onNodeWithText("۱ ساعت و ۱۱ دقیقه").assertExists()
  }
 
+ @Test fun bedtimeBadgeShowsClockTimeAlongsideDayBadge() {
+  val sample = beforeBedtime(71)
+  val sleep = checkNotNull(sample.occurrence)
+  val expectedTime = clockText(sleep.start, sample.config.prefs, context.resources.configuration.locales[0])
+  compose.setContent {
+   SleepTheme(sample.config.prefs) { BedtimeHero(sample, {}, {}, {}, {}, {}) }
+  }
+  compose.onNodeWithText(context.getString(R.string.work_day)).assertExists()
+  compose.onNodeWithText(expectedTime).assertExists()
+ }
+
+ @Test fun homeDisplayPreferencesControlYearBedtimeAndDayTypeVisibility() {
+  val sample = beforeBedtime(71)
+  val sleep = checkNotNull(sample.occurrence)
+  val zone = sample.config.prefs.zone()
+  val year = sample.now.atZone(zone).year.toString()
+  val expectedTime = clockText(sleep.start, sample.config.prefs, context.resources.configuration.locales[0])
+  val state = mutableStateOf(sample)
+
+  compose.setContent {
+   SleepTheme(state.value.config.prefs) { BedtimeHero(state.value, {}, {}, {}, {}, {}) }
+  }
+
+  compose.onNodeWithText(year, substring = true).assertExists()
+  compose.onNodeWithText(context.getString(R.string.work_day)).assertExists()
+  compose.onNodeWithText(expectedTime).assertExists()
+
+  compose.runOnIdle {
+   val p = state.value.config.prefs.copy(showYear = false, showBedtime = false, showDayType = false)
+   state.value = state.value.copy(config = state.value.config.copy(prefs = p))
+  }
+
+  compose.onNodeWithText(year, substring = true).assertDoesNotExist()
+  compose.onNodeWithText(context.getString(R.string.work_day)).assertDoesNotExist()
+  compose.onNodeWithText(expectedTime).assertDoesNotExist()
+ }
+
  @Test fun durationOmitsZeroMinutesInPersian() {
   val localized = context.createConfigurationContext(Configuration(context.resources.configuration).apply { setLocale(Locale.forLanguageTag("fa")) })
   val prefs = Preferences(language = "fa")

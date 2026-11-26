@@ -1,41 +1,39 @@
+@file:OptIn(ExperimentalLayoutApi::class)
 package dev.sleeptime.ui
 
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.*
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.*
 import dev.sleeptime.R
 import dev.sleeptime.core.*
 import java.time.*
-import java.time.format.TextStyle
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle as DayNameStyle
 import kotlin.math.ceil
 import kotlin.math.sin
 import kotlin.math.PI
@@ -44,6 +42,7 @@ import kotlin.math.PI
  s: DashboardState,
  vm: AppViewModel,
  onSettings: () -> Unit = {},
+ onReports: () -> Unit = {},
  onEditor: (String) -> Unit,
  onConfirmed: (String) -> Unit
 ) {
@@ -54,7 +53,8 @@ import kotlin.math.PI
   onSnooze = { onEditor("snooze") },
   onUndo = { s.occurrence?.let { vm.undo(it.key) } },
   onCancelSnooze = { s.occurrence?.let { vm.cancelSnooze(it.key) } },
-  onSettings = onSettings
+  onSettings = onSettings,
+  onReports = onReports
  )
 }
 
@@ -66,15 +66,12 @@ import kotlin.math.PI
  onUndo: () -> Unit,
  onCancelSnooze: () -> Unit,
  onSettings: () -> Unit = {},
- initialShowSettings: Boolean = false
+ onReports: () -> Unit = {}
 ) {
  val p = s.config.prefs
  val locale = LocalConfiguration.current.locales[0]
- val reduced = LocalReducedMotion.current
- var showSettings by rememberSaveable { mutableStateOf(initialShowSettings) }
  val localTime = s.now.atZone(p.zone())
  val localDate = localTime.toLocalDate()
- val date = remember(localDate, p, locale) { dateText(localDate, p, locale) }
  val sleep = s.occurrence
  val snoozed = s.activeSession
   ?.takeIf { it.key == sleep?.key && !it.completed && !s.confirmed }
@@ -107,12 +104,7 @@ import kotlin.math.PI
  BoxWithConstraints(
   Modifier
    .fillMaxSize()
-   .background(sky)
-   .pointerInput(Unit) {
-    detectTapGestures {
-     showSettings = !showSettings
-    }
-   },
+   .background(sky),
   contentAlignment = Alignment.TopCenter
  ) {
   val compact = maxHeight < 450.dp
@@ -125,38 +117,61 @@ import kotlin.math.PI
   }
   Column(
    Modifier.widthIn(max = 760.dp).fillMaxSize()
-    .padding(start = 18.dp, top = if (compact) 8.dp else 18.dp, end = 18.dp, bottom = 44.dp),
+    .padding(start = 18.dp, top = if (compact) 8.dp else 14.dp, end = 18.dp, bottom = if (compact) 12.dp else 24.dp),
    horizontalAlignment = Alignment.CenterHorizontally
   ) {
    Box(
     Modifier
      .fillMaxWidth()
-     .height(if (compact) 36.dp else 44.dp),
+     .heightIn(min = if (compact) 40.dp else 48.dp),
     contentAlignment = Alignment.Center
    ) {
+    IconButton(
+     onClick = onReports,
+     modifier = Modifier.align(Alignment.CenterStart).sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+    ) {
+     AppIcon(Icons.Rounded.BarChart, R.string.statistics, tint = muted)
+    }
+    val dateLabel = if (isJalali(p, locale)) {
+     val d = remember(localDate) { PersianDates.fromGregorian(localDate) }
+     val mainDate = remember(localDate, d, p, locale) {
+      "${localDate.dayOfWeek.getDisplayName(DayNameStyle.FULL, locale)}، ${number(d.day, p, locale)} ${jalaliMonthName(d.month, locale)}"
+     }
+     val yearPart = remember(d, p, locale) { " ${number(d.year, p, locale)}" }
+     val mainStyle = SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = ink)
+     val yearStyle = SpanStyle(fontSize = MaterialTheme.typography.labelLarge.fontSize, fontWeight = FontWeight.Medium, color = muted)
+     buildAnnotatedString {
+      withStyle(mainStyle) { append(mainDate) }
+      if (p.showYear) {
+       withStyle(yearStyle) { append(yearPart) }
+      }
+     }
+    } else {
+     val mainDate = remember(localDate, p, locale) {
+      number(localDate.format(DateTimeFormatter.ofPattern("EEEE, MMMM d", locale)), p, locale)
+     }
+     val yearPart = remember(localDate, p, locale) { " ${number(localDate.year, p, locale)}" }
+     val mainStyle = SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = ink)
+     val yearStyle = SpanStyle(fontSize = MaterialTheme.typography.labelLarge.fontSize, fontWeight = FontWeight.Medium, color = muted)
+     buildAnnotatedString {
+      withStyle(mainStyle) { append(mainDate) }
+      if (p.showYear) {
+       withStyle(yearStyle) { append(yearPart) }
+      }
+     }
+    }
     Text(
-     date,
-     modifier = Modifier.padding(horizontal = 48.dp),
-     style = MaterialTheme.typography.labelLarge,
-     color = muted,
+     dateLabel,
+     modifier = Modifier.padding(horizontal = 52.dp),
+     style = MaterialTheme.typography.titleMedium,
      maxLines = 1,
      overflow = TextOverflow.Ellipsis
     )
-    androidx.compose.animation.AnimatedVisibility(
-     visible = showSettings,
-     enter = if (reduced) EnterTransition.None else fadeIn(motionSpec(false)),
-     exit = if (reduced) ExitTransition.None else fadeOut(motionSpec(false, 150)),
-     modifier = Modifier.align(Alignment.CenterEnd)
+    IconButton(
+     onClick = onSettings,
+     modifier = Modifier.align(Alignment.CenterEnd).sizeIn(minWidth = 48.dp, minHeight = 48.dp)
     ) {
-     IconButton(
-      onClick = {
-       showSettings = false
-       onSettings()
-      },
-      modifier = Modifier.size(if (compact) 36.dp else 44.dp)
-     ) {
-      AppIcon(Icons.Rounded.Tune, R.string.settings, tint = ink)
-     }
+     AppIcon(Icons.Rounded.Settings, R.string.settings, tint = muted)
     }
    }
    SkyIllustration(
@@ -238,14 +253,38 @@ import kotlin.math.PI
      }
     }
    }
-   Spacer(Modifier.weight(if (compact) .12f else .22f))
-   Row(
-    Modifier.clip(CircleShape).background(ink.copy(alpha = .10f)).padding(horizontal = 12.dp, vertical = 6.dp),
-    horizontalArrangement = Arrangement.spacedBy(6.dp),
-    verticalAlignment = Alignment.CenterVertically
-   ) {
-    Icon(if (workDay) Icons.Rounded.WorkOutline else Icons.Rounded.Spa, null, Modifier.size(14.dp), tint = muted)
-    Text(stringResource(if (workDay) R.string.work_day else R.string.rest_day), style = MaterialTheme.typography.labelMedium, color = muted)
+   val showDayBadge = p.showDayType
+   val showSleepBadge = p.showBedtime && sleep != null
+   if (showDayBadge || showSleepBadge) {
+    Spacer(Modifier.weight(if (compact) .12f else .22f))
+    FlowRow(
+     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+     verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+     if (showDayBadge) {
+      Row(
+       Modifier.clip(CircleShape).background(ink.copy(alpha = .10f)).padding(horizontal = 12.dp, vertical = 6.dp),
+       horizontalArrangement = Arrangement.spacedBy(6.dp),
+       verticalAlignment = Alignment.CenterVertically
+      ) {
+       Icon(if (workDay) Icons.Rounded.WorkOutline else Icons.Rounded.Spa, null, Modifier.size(14.dp), tint = muted)
+       Text(stringResource(if (workDay) R.string.work_day else R.string.rest_day), style = MaterialTheme.typography.labelMedium, color = muted)
+      }
+     }
+     if (showSleepBadge) {
+      val bedtimeClock = remember(sleep.start, p, locale) { clockText(sleep.start, p, locale) }
+      val bedtimeDesc = "${stringResource(R.string.bedtime)} $bedtimeClock"
+      Row(
+       Modifier.clip(CircleShape).background(ink.copy(alpha = .10f)).padding(horizontal = 12.dp, vertical = 6.dp)
+        .semantics(mergeDescendants = true) { contentDescription = bedtimeDesc },
+       horizontalArrangement = Arrangement.spacedBy(6.dp),
+       verticalAlignment = Alignment.CenterVertically
+      ) {
+       Icon(Icons.Rounded.Bedtime, null, Modifier.size(14.dp), tint = muted)
+       Text(bedtimeClock, style = MaterialTheme.typography.labelMedium, color = muted)
+      }
+     }
+    }
    }
   }
  }
@@ -456,98 +495,6 @@ fun SkyIllustration(
     }
     val cloudColor = if (twilight) Color(0xFFFFD4BE) else Color.White
     drawPath(cloud, cloudColor.copy(alpha = .60f))
-   }
-  }
- }
-}
-
-@Composable fun WeeklyCard(budget: TimeBudget,days: List<Pair<LocalDate,TimeBudget>>,p: Preferences,modifier: Modifier=Modifier,onMore: (() -> Unit)?=null) {
- val context=LocalContext.current;val locale=LocalConfiguration.current.locales[0]
- val reduced=LocalReducedMotion.current
- var selected by remember { mutableStateOf<Kind?>(null) }; var showDetail by remember { mutableStateOf(false) }
- var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
- Panel(modifier) {
-  SectionLabel(stringResource(R.string.report_week_budget),if(onMore!=null) { { IconButton(onClick=onMore) { AppIcon(Icons.AutoMirrored.Rounded.ArrowForward,R.string.statistics) } } } else null)
-  val start=budget.start.atZone(p.zone()).toLocalDate()
-  val end=budget.end.atZone(p.zone()).toLocalDate().minusDays(1)
-  Crossfade(start to end,animationSpec=motionSpec(reduced),label="week-range") { (from, to) ->
-   Text(dateText(from,p,locale,true)+" — "+dateText(to,p,locale,true),Modifier.hideOutgoingContent(from!=start || to!=end),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-  }
-  Crossfade(budget.free.seconds,animationSpec=motionSpec(reduced),label="weekly-free-time") { seconds ->
-   Text(duration(context,seconds,p),Modifier.hideOutgoingContent(seconds!=budget.free.seconds),style=MaterialTheme.typography.headlineLarge,color=MaterialTheme.colorScheme.secondary)
-  }
-  Text(stringResource(R.string.report_week_remaining,duration(context,budget.remainingFree.seconds,p)),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-  Row(Modifier.fillMaxWidth().height(20.dp).clip(CircleShape),horizontalArrangement=Arrangement.spacedBy(3.dp)) {
-   for(kind in listOf(Kind.SLEEP,Kind.WORK,Kind.EXERCISE,null)) {
-    val seconds=if(kind==null) budget.free.seconds else budget.breakdown[kind]?.seconds?:0
-    val segmentTitle=stringResource(kindTitle(kind))
-    val weight by animateFloatAsState(seconds.toFloat(),animationSpec=motionSpec(reduced, 300),label="budget-segment")
-    if(weight>0f) Box(Modifier.weight(weight).fillMaxHeight().clip(RectangleShape).background(kindColor(kind))
-     .clickable(enabled=seconds>0) {selected=kind;showDetail=true}
-     .semantics { if(seconds>0) contentDescription=segmentTitle+": "+duration(context,seconds,p) else hideFromAccessibility() })
-   }
-  }
-  Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-   for(kind in listOf(Kind.SLEEP,Kind.WORK,Kind.EXERCISE,null)) Column(Modifier.weight(1f).clickable { selected=kind;showDetail=true }.padding(vertical=8.dp),horizontalAlignment=Alignment.CenterHorizontally) {
-    Box(Modifier.size(6.dp).clip(CircleShape).background(kindColor(kind))); Spacer(Modifier.height(6.dp)); Text(stringResource(kindTitle(kind)),style=MaterialTheme.typography.labelSmall)
-   }
-  }
-  Row(Modifier.fillMaxWidth().height(92.dp),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.Bottom) {
-   for((date,day) in days) key(date) {
-    Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(10.dp)).clickable {selectedDate=date},horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Bottom) {
-     val fraction=(day.free.seconds.toFloat()/Duration.between(day.start,day.end).seconds).coerceIn(.02f,1f)
-     val height by animateDpAsState((fraction*56+4).dp,animationSpec=motionSpec(reduced, 300),label="daily-budget")
-     Box(Modifier.fillMaxWidth(.65f).height(height).clip(RoundedCornerShape(7.dp)).background(if(date==LocalDate.now(p.zone())) FreeColor else FreeColor.copy(alpha=.42f)))
-     Spacer(Modifier.height(10.dp)); Text(date.dayOfWeek.getDisplayName(TextStyle.NARROW,locale),style=MaterialTheme.typography.labelMedium)
-    }
-   }
-  }
-  AnimatedVisibility(budget.uncertainDates.isNotEmpty(),enter=sectionEnter(reduced),exit=sectionExit(reduced)) {
-   Text(stringResource(R.string.holiday_unknown),Modifier.hideOutgoingContent(budget.uncertainDates.isEmpty()),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-  }
- }
- if(showDetail) AlertDialog(onDismissRequest={showDetail=false},title={Text(stringResource(kindTitle(selected)))},text={Column { Text(duration(context,if(selected==null) budget.free.seconds else budget.breakdown[selected]?.seconds?:0,p),style=MaterialTheme.typography.headlineMedium); Spacer(Modifier.height(12.dp)); Text(stringResource(R.string.chart_note)) }},confirmButton={TextButton(onClick={showDetail=false}) {Text(stringResource(R.string.done))}})
- days.firstOrNull { it.first==selectedDate }?.let { (date, day) ->
-  AlertDialog(onDismissRequest={selectedDate=null},title={Text(dateText(date,p,locale))},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){ for(kind in listOf(Kind.SLEEP,Kind.WORK,Kind.EXERCISE,null)) Text(stringResource(kindTitle(kind))+" · "+duration(context,if(kind==null)day.free.seconds else day.breakdown[kind]?.seconds?:0,p)) }},confirmButton={TextButton(onClick={selectedDate=null}){Text(stringResource(R.string.done))}})
- }
-}
-@Composable fun RoutineCard(s: DashboardState,vm: AppViewModel,onEditor: (String)->Unit) {
- val context=LocalContext.current;val p=s.config.prefs;val locale=LocalConfiguration.current.locales[0]
- var expanded by rememberSaveable { mutableStateOf(true) }
- val reduced=LocalReducedMotion.current
- val chevronRotation by animateFloatAsState(if(expanded) 180f else 0f,animationSpec=motionSpec(reduced),label="routine-chevron")
- val completed = remember(s.routine, s.routineOwner) {
-  val owner = s.routineOwner.toString()
-  s.routine.filter { it.ownerDate == owner }.map { it.itemId }.toSet()
- }
- val active=s.occurrence?.let {s.now >= it.start.minusSeconds(p.routineLeadMinutes*60L)} ?: true
- Panel(Modifier.widthIn(max=780.dp).fillMaxWidth()) {
-  Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-   Column(Modifier.weight(1f).clickable {expanded=!expanded}) {
-    Text(stringResource(R.string.routine),style=MaterialTheme.typography.titleLarge)
-    Crossfade(completed.size,animationSpec=motionSpec(reduced),label="routine-progress") { count ->
-     Text(stringResource(R.string.routine_progress,number(count,p,locale),number(s.config.routine.size,p,locale)),Modifier.hideOutgoingContent(count!=completed.size),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-   }
-   IconButton(onClick={onEditor("routine")}) {AppIcon(Icons.Rounded.Edit,R.string.manage_routine)}
-   IconButton(onClick={expanded=!expanded}) {AppIcon(Icons.Rounded.ExpandMore,R.string.routine,modifier=Modifier.size(22.dp).graphicsLayer { rotationZ = chevronRotation })}
-  }
-  AnimatedVisibility(!active,enter=sectionEnter(reduced),exit=sectionExit(reduced)) {
-   Text(stringResource(R.string.routine_active_at,number(p.routineLeadMinutes,p,locale)),Modifier.hideOutgoingContent(active),style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-  }
-  AnimatedVisibility(expanded,enter=sectionEnter(reduced),exit=sectionExit(reduced)) {
-   Column(Modifier.hideOutgoingContent(!expanded)) {
-    for(item in s.config.routine) key(item.id) {
-     val checked=item.id in completed
-     val color by animateColorAsState(if(checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,animationSpec=motionSpec(reduced),label="routine-completion")
-     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
-      .toggleable(value=checked,enabled=active && expanded,role=Role.Checkbox,onValueChange={vm.routineToggle(item,s.routineOwner,it)})
-      .padding(vertical=4.dp),verticalAlignment=Alignment.CenterVertically) {
-      Box(Modifier.size(48.dp),contentAlignment=Alignment.Center) { Checkbox(checked=checked,onCheckedChange=null,enabled=active) }
-      Text(number(routineText(context,item),p,locale),Modifier.weight(1f),color=color)
-     }
-    }
-    if(s.config.routine.isEmpty()) Text(stringResource(R.string.routine_empty),style=MaterialTheme.typography.bodyMedium)
    }
   }
  }

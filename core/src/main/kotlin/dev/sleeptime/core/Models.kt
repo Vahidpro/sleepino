@@ -56,7 +56,10 @@ import java.time.*
  val distractionPackages: Set<String> = emptySet(),
  val baseSleep: Boolean = true,
  val baseBedtime: Int = 1380,
- val baseWake: Int = 420
+ val baseWake: Int = 420,
+ val showYear: Boolean = true,
+ val showBedtime: Boolean = true,
+ val showDayType: Boolean = true
 ) {
  init {
   require(language in setOf("system", "en", "fa")); require(weekStart in 1..7)

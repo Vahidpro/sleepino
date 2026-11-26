@@ -23,11 +23,14 @@ class Notifications @Inject constructor(@param:ApplicationContext private val co
   val p = config.prefs
   val displayContext=localizedContext(context,p)
   // Channel settings are immutable. New sound/vibration choices get a new, bounded identity.
+  val hasSound = !p.silent
+  val importance = if (!hasSound && !p.vibration) NotificationManager.IMPORTANCE_LOW else NotificationManager.IMPORTANCE_DEFAULT
   val channelId = "bedtime_${listOf(p.soundUri,p.vibration,p.silent).hashCode()}"
   val manager = context.getSystemService(NotificationManager::class.java)
-  val channel = NotificationChannel(channelId,displayContext.getString(R.string.bedtime_reminders),if(p.silent) NotificationManager.IMPORTANCE_LOW else NotificationManager.IMPORTANCE_DEFAULT)
-  val sound = when { p.silent -> null; p.soundUri == "default" -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION); else -> Uri.parse(p.soundUri) }
-  channel.setSound(sound,AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build()); channel.enableVibration(p.vibration && !p.silent)
+  val channel = NotificationChannel(channelId,displayContext.getString(R.string.bedtime_reminders),importance)
+  val sound = when { !hasSound -> null; p.soundUri == "default" -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION); else -> Uri.parse(p.soundUri) }
+  channel.setSound(sound, if (sound != null) AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build() else null)
+  channel.enableVibration(p.vibration)
   manager.createNotificationChannel(channel)
   val open = PendingIntent.getActivity(context,0,Intent(context,MainActivity::class.java),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
   fun action(name: String, code: Int) = PendingIntent.getBroadcast(context,code,Intent(context,AlarmReceiver::class.java).setAction(name).putExtra("owner",event.occurrenceKey),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)

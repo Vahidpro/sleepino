@@ -4,16 +4,15 @@ import android.content.res.Configuration
 import android.os.Build
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.compose.ui.unit.LayoutDirection
 import dev.sleeptime.AppLanguageResources
 import dev.sleeptime.HomePages
 import dev.sleeptime.R
@@ -49,44 +48,38 @@ class HomePagesTest {
   compose.onNodeWithText("گزارش و آمار").assertIsDisplayed()
  }
 
- @Test fun swipingChangesPageAndIndicator() {
-  val context = InstrumentationRegistry.getInstrumentation().targetContext
+ @Test fun swipingAndCornerButtonsNavigateBetweenHomeAndReports() {
   compose.setContent {
    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
     SleepTheme(Preferences()) {
-     HomePages({}, { Text("Home sample") }, { Text("Reports sample") })
+     HomePages(
+      dashboard = { onReports ->
+       Button(onClick = onReports) { Text("Go to reports") }
+      },
+      reports = { onBack ->
+       Button(onClick = onBack) { Text("Reports sample") }
+      }
+     )
     }
    }
   }
 
-  compose.onNodeWithContentDescription(context.getString(R.string.dashboard)).assertExists()
+  compose.onNodeWithText("Go to reports").performClick()
+  compose.onNodeWithText("Reports sample").assertIsDisplayed()
+
+  compose.onNodeWithText("Reports sample").performClick()
+  compose.onNodeWithText("Go to reports").assertIsDisplayed()
+
   compose.onRoot().performTouchInput { swipeLeft(startX = width * .84f, endX = width * .16f) }
   compose.onNodeWithText("Reports sample").assertIsDisplayed()
-  compose.onNodeWithContentDescription(context.getString(R.string.statistics)).assertExists()
+
   compose.onRoot().performTouchInput { swipeRight(startX = width * .16f, endX = width * .84f) }
-  compose.onNodeWithText("Home sample").assertIsDisplayed()
+  compose.onNodeWithText("Go to reports").assertIsDisplayed()
  }
 
- @Test fun downwardSwipeOpensSettingsOnlyWhenItStartsAtTop() {
+ @Test fun reportsAndSettingsCornerButtonsAreImmediatelyVisibleAndClickable() {
   var settingsOpens = 0
-  compose.setContent {
-   SleepTheme(Preferences()) {
-    HomePages({ settingsOpens++ }, { Text("Home sample") }, { Text("Reports sample") })
-   }
-  }
-
-  compose.onRoot().performTouchInput {
-   swipe(Offset(centerX, height * .48f), Offset(centerX, height * .80f))
-  }
-  compose.runOnIdle { check(settingsOpens == 0) }
-  compose.onRoot().performTouchInput {
-   swipe(Offset(centerX, height * .025f), Offset(centerX, height * .40f))
-  }
-  compose.runOnIdle { check(settingsOpens == 1) }
- }
-
- @Test fun tappingMainPageTogglesSettingsIcon() {
-  var settingsOpens = 0
+  var reportsOpens = 0
   val sample = previewState()
   compose.setContent {
    SleepTheme(sample.config.prefs) {
@@ -97,23 +90,21 @@ class HomePagesTest {
      onSnooze = {},
      onUndo = {},
      onCancelSnooze = {},
-     onSettings = { settingsOpens++ }
+     onSettings = { settingsOpens++ },
+     onReports = { reportsOpens++ }
     )
    }
   }
 
+  val reportsIcon = compose.onNodeWithContentDescription(compose.activity.getString(R.string.statistics))
   val settingsIcon = compose.onNodeWithContentDescription(compose.activity.getString(R.string.settings))
-  settingsIcon.assertDoesNotExist()
 
-  compose.onRoot().performClick()
-  settingsIcon.assertIsDisplayed()
+  reportsIcon.assertIsDisplayed().performClick()
+  settingsIcon.assertIsDisplayed().performClick()
 
-  compose.onRoot().performClick()
-  settingsIcon.assertDoesNotExist()
-
-  compose.onRoot().performClick()
-  settingsIcon.assertIsDisplayed()
-  settingsIcon.performClick()
-  compose.runOnIdle { check(settingsOpens == 1) }
+  compose.runOnIdle {
+   check(reportsOpens == 1)
+   check(settingsOpens == 1)
+  }
  }
 }

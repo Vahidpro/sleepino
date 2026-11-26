@@ -30,6 +30,9 @@ val SleepColor = Color(0xFFAF9CF7)
 val WorkColor = Color(0xFF7BB6EF)
 val ExerciseColor = Color(0xFFE9B27C)
 val FreeColor = Color(0xFF75CEB9)
+val EarlyColor = Color(0xFF8E9CF5)
+val LateColor = Color(0xFFF3A790)
+val WarningAmber = Color(0xFFE5A93B)
 val CardShape = RoundedCornerShape(28.dp)
 val LocalReducedMotion = staticCompositionLocalOf { false }
 private val HexAccent = Regex("#[0-9a-fA-F]{6}")
@@ -146,14 +149,16 @@ fun duration(context: Context, seconds: Long, p: Preferences): String {
 fun clockText(time: Instant, p: Preferences, locale: Locale): String = number(DateTimeFormatter.ofPattern(if(p.clock24) "HH:mm" else "h:mm a",locale).withZone(p.zone()).format(time),p,locale)
 fun minutesText(minutes: Int, p: Preferences, locale: Locale): String = number(LocalTime.of(minutes/60,minutes%60).format(DateTimeFormatter.ofPattern(if(p.clock24) "HH:mm" else "h:mm a",locale)),p,locale)
 fun isJalali(p: Preferences, locale: Locale): Boolean = p.jalali || locale.language == "fa" || p.language == "fa"
+fun jalaliMonthName(month: Int, locale: Locale): String {
+ val fa=arrayOf("فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند")
+ val en=arrayOf("Farvardin","Ordibehesht","Khordad","Tir","Mordad","Shahrivar","Mehr","Aban","Azar","Dey","Bahman","Esfand")
+ return if(locale.language=="fa") fa[month-1] else en[month-1]
+}
 fun dateText(date: LocalDate, p: Preferences, locale: Locale, short: Boolean=false): String {
  if(!isJalali(p, locale)) return number(date.format(DateTimeFormatter.ofPattern(if(short) "MMM d" else "EEEE, MMMM d",locale)),p,locale)
  val d=PersianDates.fromGregorian(date)
- val fa=arrayOf("فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند")
- val en=arrayOf("Farvardin","Ordibehesht","Khordad","Tir","Mordad","Shahrivar","Mehr","Aban","Azar","Dey","Bahman","Esfand")
- val month=if(locale.language=="fa") fa[d.month-1] else en[d.month-1]
+ val month=jalaliMonthName(d.month, locale)
  return (if(short) "" else date.dayOfWeek.getDisplayName(TextStyle.FULL,locale)+"، ")+number(d.day,p,locale)+" "+month+(if(short) "" else " "+number(d.year,p,locale))
 }
-fun routineText(context: Context, item: RoutineItem): String = if(item.defaultKey == null) item.text else context.getString(when(item.defaultKey) {1->R.string.routine_phone;2->R.string.routine_teeth;3->R.string.routine_clothes;else->R.string.routine_rest})
 fun kindTitle(kind: Kind?): Int = when(kind) { Kind.SLEEP->R.string.sleep;Kind.WORK->R.string.work;Kind.EXERCISE->R.string.exercise;null->R.string.free }
 fun kindColor(kind: Kind?): Color = when(kind) { Kind.SLEEP->SleepColor;Kind.WORK->WorkColor;Kind.EXERCISE->ExerciseColor;null->FreeColor }

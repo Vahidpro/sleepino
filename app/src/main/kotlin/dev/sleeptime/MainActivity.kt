@@ -14,34 +14,17 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.core.os.LocaleListCompat
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -53,7 +36,6 @@ import dev.sleeptime.core.Preferences
 import dev.sleeptime.ui.*
 import kotlinx.coroutines.launch
 import java.util.Locale
-import kotlin.math.abs
 
 @AndroidEntryPoint class MainActivity: AppCompatActivity() {
  private val vm: AppViewModel by viewModels()
@@ -92,9 +74,8 @@ import kotlin.math.abs
          composable("dashboard") {
           val openSettings = dropUnlessResumed { nav.navigate("settings") { launchSingleTop = true } }
           HomePages(
-           onSettings = openSettings,
-           dashboard = { Dashboard(state, vm, openSettings, { editor = it }, confirmed) },
-           reports = { StatisticsScreen(state, vm) { editor = it } }
+           dashboard = { onReports -> Dashboard(state, vm, openSettings, onReports, { editor = it }, confirmed) },
+           reports = { onBack -> StatisticsScreen(state, vm, onBack = onBack, onSettings = openSettings) }
           )
          }
          composable("settings") {
@@ -138,60 +119,21 @@ internal fun AppLanguageResources(language: String, content: @Composable () -> U
 
 @Composable
 internal fun HomePages(
- onSettings: () -> Unit,
- dashboard: @Composable () -> Unit,
- reports: @Composable () -> Unit
+ dashboard: @Composable (onReports: () -> Unit) -> Unit,
+ reports: @Composable (onBack: () -> Unit) -> Unit
 ) {
  val pager = rememberPagerState { 2 }
- val openSettings by rememberUpdatedState(onSettings)
- val settingsLabel = stringResource(R.string.settings)
- Box(Modifier.fillMaxSize()) {
-  HorizontalPager(
-   state = pager,
-   modifier = Modifier.fillMaxSize().semantics {
-    customActions = listOf(CustomAccessibilityAction(settingsLabel) { openSettings(); true })
-   }.pointerInput(Unit) {
-    awaitEachGesture {
-     val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-     if (down.position.y > 72.dp.toPx()) return@awaitEachGesture
-     while (true) {
-      val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id }
-      if (change == null || !change.pressed) break
-      val distance = change.position - down.position
-      if (distance.y < -viewConfiguration.touchSlop ||
-       (abs(distance.x) > viewConfiguration.touchSlop && abs(distance.x) > abs(distance.y))
-      ) break
-      if (distance.y > 44.dp.toPx() && distance.y > 1.4f * abs(distance.x)) {
-       change.consume()
-       openSettings()
-       break
-      }
-     }
-    }
-   }
-  ) { page ->
-   if (page == 0) dashboard() else reports()
+ val scope = rememberCoroutineScope()
+ val reduced = LocalReducedMotion.current
+ fun goToPage(page: Int) {
+  scope.launch {
+   if (reduced) pager.scrollToPage(page) else pager.animateScrollToPage(page)
   }
-  val current = pager.settledPage
-  val description = stringResource(if (current == 0) R.string.dashboard else R.string.statistics)
-  val direction = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
-  val reduced = LocalReducedMotion.current
-  Box(
-   Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)
-    .size(width = 56.dp, height = 24.dp).background(Color(0xB30B1527), CircleShape)
-    .semantics { contentDescription = description }
-    .drawBehind {
-     val gap = 18.dp.toPx()
-     val position = if (reduced) pager.settledPage.toFloat()
-      else (pager.currentPage + pager.currentPageOffsetFraction).coerceIn(0f, 1f)
-     drawCircle(Color.White.copy(alpha = .4f), 3.dp.toPx(), center - Offset(gap / 2, 0f))
-     drawCircle(Color.White.copy(alpha = .4f), 3.dp.toPx(), center + Offset(gap / 2, 0f))
-     val radius = 3.dp.toPx()
-     val width = 14.dp.toPx()
-     val selectedX = center.x + (position - .5f) * gap * direction
-     drawRoundRect(Color.White, Offset(selectedX - width / 2, center.y - radius),
-      Size(width, radius * 2), CornerRadius(radius))
-    }
-  )
+ }
+ HorizontalPager(
+  state = pager,
+  modifier = Modifier.fillMaxSize()
+ ) { page ->
+  if (page == 0) dashboard { goToPage(1) } else reports { goToPage(0) }
  }
 }

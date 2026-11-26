@@ -15,7 +15,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 
 val Context.settingsStore by preferencesDataStore("settings")
-val AppJson = Json { ignoreUnknownKeys = false; encodeDefaults = true }
+val AppJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 @Singleton class ConfigurationStore @Inject constructor(@param:ApplicationContext private val context: Context) {
  private val key = stringPreferencesKey("configuration_v1")
  private val sessionKey = stringPreferencesKey("session_v1")
@@ -29,7 +29,7 @@ val AppJson = Json { ignoreUnknownKeys = false; encodeDefaults = true }
  }
  private fun getDefault(): Configuration {
   val fa = context.resources.configuration.locales[0].language == "fa"
-  return Configuration(prefs = Preferences(weekStart = if (fa) 6 else 7, region = if (fa) HolidayRegion.IRAN else HolidayRegion.NONE, persianNumerals = fa, jalali = fa))
+  return Configuration(prefs = Preferences(weekStart = if (fa) 6 else 7, region = if (fa) HolidayRegion.IRAN else HolidayRegion.NONE, jalali = fa))
  }
  suspend fun replace(value: Configuration) { context.settingsStore.edit { it[key] = AppJson.encodeToString(value); it.remove(sessionKey) } }
  suspend fun session(): ActiveSession? = activeSession.first()

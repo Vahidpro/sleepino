@@ -16,7 +16,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.withLock
 
-data class DashboardState(val config: Configuration, val now: Instant, val occurrence: SleepOccurrence?, val confirmed: Boolean, val nextWork: Span?, val today: TimeBudget, val week: TimeBudget, val days: List<Pair<LocalDate,TimeBudget>>, val history: List<BedtimeEntity>, val routine: List<RoutineEntity>, val routineOwner: LocalDate, val activeSession: ActiveSession?, val holidayRevision: Int = 0, val holidays: HolidayProvider? = null)
+data class DashboardState(val config: Configuration, val now: Instant, val occurrence: SleepOccurrence?, val confirmed: Boolean, val nextWork: Span?, val today: TimeBudget, val week: TimeBudget, val days: List<Pair<LocalDate,TimeBudget>>, val history: List<BedtimeEntity>, val activeSession: ActiveSession?, val holidayRevision: Int = 0, val holidays: HolidayProvider? = null)
 @HiltViewModel class AppViewModel @Inject constructor(
  val store: ConfigurationStore, private val historyDao: HistoryDao, val holidays: HolidayRepository,
  val controller: ReminderController, private val backup: BackupManager, val clock: Clock,
@@ -29,8 +29,8 @@ data class DashboardState(val config: Configuration, val now: Instant, val occur
 
  @OptIn(ExperimentalCoroutinesApi::class)
  val state: StateFlow<DashboardState?> = combine(
-  store.configuration,historyDao.history(),historyDao.routines(),store.activeSession,refresh
- ) { config, history, routines, session, revision ->
+  store.configuration,historyDao.history(),store.activeSession,refresh
+ ) { config, history, session, revision ->
   flow {
    val zone = config.prefs.zone()
    var budgetDate: LocalDate? = null
@@ -51,7 +51,7 @@ data class DashboardState(val config: Configuration, val now: Instant, val occur
     val occurrence = TimeEngine.activeSleep(config,now)
     val active = session?.takeIf { it.key == occurrence?.key && it.scheduled == occurrence.start.toEpochMilli() }
     emit(DashboardState(config,now,occurrence,history.any { it.key == occurrence?.key },TimeEngine.activeOrNextWork(config,now,holidays),
-     today.at(now),week.at(now),days,history,routines,occurrence?.owner ?: date,active,revision,holidays))
+     today.at(now),week.at(now),days,history,active,revision,holidays))
     val clockNow = clock.millis()
     val displayNow = now.toEpochMilli()
     val nextMinute = displayNow - displayNow.mod(60_000L) + 60_000L
@@ -78,9 +78,6 @@ data class DashboardState(val config: Configuration, val now: Instant, val occur
  fun undo(key: String) = action { controller.undo(key) }
  fun snooze(minutes: Int) = action { if(!controller.snooze(minutes)) message.emit(dev.sleeptime.R.string.snooze_limit) }
  fun cancelSnooze(key: String) = action { controller.cancelSnooze(key) }
- fun routineToggle(item: RoutineItem, date: LocalDate, checked: Boolean) = action {
-  if (checked) historyDao.complete(RoutineEntity(date.toString(),item.id,clock.millis())) else historyDao.uncomplete(date.toString(),item.id)
- }
  fun resume() = action { refresh.update { it + 1 }; controller.reconcile() }
  fun export(uri: Uri) = action { context.contentResolver.openOutputStream(uri,"wt")!!.bufferedWriter().use { it.write(backup.export()) }; message.emit(dev.sleeptime.R.string.success) }
  fun readBackup(uri: Uri) = action { pendingBackup.value = backup.validate(readBounded(uri,10_000_000)) }
