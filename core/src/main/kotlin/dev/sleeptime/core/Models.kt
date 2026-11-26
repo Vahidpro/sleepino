@@ -35,6 +35,7 @@ import java.time.*
  val weekStart: Int = 6,
  val region: HolidayRegion = HolidayRegion.IRAN,
  val zoneId: String = "system",
+ val countWorkRemaining: Boolean = false,
  val notifications: Boolean = false,
  val preciseAlarms: Boolean = false,
  val smartReminders: Boolean = false,

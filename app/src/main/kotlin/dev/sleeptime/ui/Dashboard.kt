@@ -188,7 +188,7 @@ import kotlin.math.PI
       }
      }
      else -> {
-      val remaining = Duration.between(s.now, snoozed ?: sleep.start)
+      val remaining = TimeEngine.remainingToBedtime(s.config, s.now, sleep, snoozed, s.holidays)
       val overdue = snoozed == null && pastBedtime
       val wholeMinutes = if (overdue) remaining.abs().toMinutes() else ceil(remaining.toMillis() / 60_000.0).toLong()
       Text(

@@ -60,4 +60,33 @@ class TimeEngineTest {
   assertNull(TimeEngine.sleep(c,date))
  }
  @Test fun collapsedDstSleepNeverBecomesNegative() {val d=LocalDate.of(2026,3,28);val c=Configuration(prefs=Preferences(zoneId="Europe/Berlin"),sleep=listOf(SleepRule(6,bedtime=150,wake=180)));val o=TimeEngine.sleep(c,d)!!;assertFalse(o.end<o.start)}
+ @Test fun remainingToBedtimeExcludesWorkOnWorkdayByDefault() {
+  val c = config()
+  val sleep = TimeEngine.sleep(c, date)!!
+  val morning = Instant.parse("2026-11-16T08:00:00Z")
+  val remaining = TimeEngine.remainingToBedtime(c, morning, sleep, holidays = noHolidays)
+  assertEquals(6L, remaining.toHours())
+ }
+ @Test fun remainingToBedtimeCountsWorkWhenSettingEnabled() {
+  val c = config().let { it.copy(prefs = it.prefs.copy(countWorkRemaining = true)) }
+  val sleep = TimeEngine.sleep(c, date)!!
+  val morning = Instant.parse("2026-11-16T08:00:00Z")
+  val remaining = TimeEngine.remainingToBedtime(c, morning, sleep, holidays = noHolidays)
+  assertEquals(15L, remaining.toHours())
+ }
+ @Test fun remainingToBedtimeDuringWorkExcludesRemainingWorkOnly() {
+  val c = config()
+  val sleep = TimeEngine.sleep(c, date)!!
+  val midday = Instant.parse("2026-11-16T12:00:00Z")
+  val remaining = TimeEngine.remainingToBedtime(c, midday, sleep, holidays = noHolidays)
+  assertEquals(5L, remaining.toHours())
+ }
+ @Test fun remainingToBedtimeOnRestDayCountsAllHours() {
+  val c = config()
+  val saturday = date.plusDays(5)
+  val sleep = TimeEngine.sleep(c, saturday)!!
+  val morning = saturday.atTime(8, 0).toInstant(ZoneOffset.UTC)
+  val remaining = TimeEngine.remainingToBedtime(c, morning, sleep, holidays = noHolidays)
+  assertEquals(15L, remaining.toHours())
+ }
 }

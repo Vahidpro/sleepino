@@ -1,6 +1,6 @@
 # Privacy
 
-Sleep & Time has no account system, analytics SDK, ads, trackers, backend, or Internet permission. Schedules, routine completions, reported bedtimes, preferences, and reminder state stay in app-private local storage. Android automatic cloud backup is disabled; explicit JSON export writes only to the user-selected document destination, which may itself be a cloud provider chosen by the user.
+sleepino has no account system, analytics SDK, ads, trackers, backend, or Internet permission. Schedules, routine completions, reported bedtimes, preferences, and reminder state stay in app-private local storage. Android automatic cloud backup is disabled; explicit JSON export writes only to the user-selected document destination, which may itself be a cloud provider chosen by the user.
 
 Device usage access is optional. The application scans recent Android usage events at scheduled reminder time to find the latest interaction/foreground package. It does not retain event histories or upload activity. Inactivity is not treated as verified sleep. App selection only enumerates launchable applications and does not request broad `QUERY_ALL_PACKAGES` access.
 

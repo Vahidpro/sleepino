@@ -34,7 +34,8 @@ class BedtimeWidget: GlanceAppWidget() {
   val displayContext=localizedContext(context,config.prefs)
   val locale=displayContext.resources.configuration.locales[0]
   val title=displayContext.getString(if(confirmed)R.string.sleep_confirmed else R.string.widget_bedtime)
-  val timer=occurrence?.let {duration(displayContext,Duration.between(now,it.start).seconds,config.prefs)}?:displayContext.getString(R.string.not_configured)
+  val remaining=occurrence?.let { TimeEngine.remainingToBedtime(config, now, it, null, entry.holidays()) }
+  val timer=remaining?.let { duration(displayContext, it.seconds, config.prefs) } ?: displayContext.getString(R.string.not_configured)
   val time=occurrence?.let {clockText(it.start,config.prefs,locale)}.orEmpty()
   provideContent {
    WidgetShell(config.prefs) {

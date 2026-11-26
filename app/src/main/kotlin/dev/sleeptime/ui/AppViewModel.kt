@@ -16,7 +16,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.withLock
 
-data class DashboardState(val config: Configuration, val now: Instant, val occurrence: SleepOccurrence?, val confirmed: Boolean, val nextWork: Span?, val today: TimeBudget, val week: TimeBudget, val days: List<Pair<LocalDate,TimeBudget>>, val history: List<BedtimeEntity>, val routine: List<RoutineEntity>, val routineOwner: LocalDate, val activeSession: ActiveSession?, val holidayRevision: Int = 0)
+data class DashboardState(val config: Configuration, val now: Instant, val occurrence: SleepOccurrence?, val confirmed: Boolean, val nextWork: Span?, val today: TimeBudget, val week: TimeBudget, val days: List<Pair<LocalDate,TimeBudget>>, val history: List<BedtimeEntity>, val routine: List<RoutineEntity>, val routineOwner: LocalDate, val activeSession: ActiveSession?, val holidayRevision: Int = 0, val holidays: HolidayProvider? = null)
 @HiltViewModel class AppViewModel @Inject constructor(
  val store: ConfigurationStore, private val historyDao: HistoryDao, val holidays: HolidayRepository,
  val controller: ReminderController, private val backup: BackupManager, val clock: Clock,
@@ -51,7 +51,7 @@ data class DashboardState(val config: Configuration, val now: Instant, val occur
     val occurrence = TimeEngine.activeSleep(config,now)
     val active = session?.takeIf { it.key == occurrence?.key && it.scheduled == occurrence.start.toEpochMilli() }
     emit(DashboardState(config,now,occurrence,history.any { it.key == occurrence?.key },TimeEngine.activeOrNextWork(config,now,holidays),
-     today.at(now),week.at(now),days,history,routines,occurrence?.owner ?: date,active,revision))
+     today.at(now),week.at(now),days,history,routines,occurrence?.owner ?: date,active,revision,holidays))
     val clockNow = clock.millis()
     val displayNow = now.toEpochMilli()
     val nextMinute = displayNow - displayNow.mod(60_000L) + 60_000L

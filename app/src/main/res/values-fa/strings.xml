@@ -1,5 +1,5 @@
 <resources>
- <string name="app_name">خواب و زمان</string>
+ <string name="app_name">Sleepino</string>
  <string name="your_evening">کمی زمان بیشتر برای خودت</string>
  <string name="dashboard">روزت، با آرامش</string>
  <string name="settings">تنظیمات</string>
@@ -245,4 +245,6 @@
  <string name="week_date_range">%1$s تا %2$s</string>
  <string name="report_week_budget">بودجهٔ زمانی هفته</string>
  <string name="report_week_remaining">زمان باقی‌مانده · %1$s</string>
+ <string name="count_work_remaining">محاسبه ساعت‌های کاری جزو زمان باقیمانده</string>
+ <string name="count_work_remaining_explanation">در صورت غیرفعال بودن، ساعت‌های کاری در روزهای کاری جزو زمان باقیمانده تا خواب حساب نمی‌شوند.</string>
 </resources>

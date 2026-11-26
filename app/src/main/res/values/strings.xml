@@ -1,5 +1,5 @@
 <resources>
- <string name="app_name">Sleep &amp; Time</string>
+ <string name="app_name">Sleepino</string>
  <string name="your_evening">A little more time for you</string>
  <string name="dashboard">Your day, in balance</string>
  <string name="settings">Settings</string>
@@ -245,4 +245,6 @@
  <string name="week_date_range">%1$s – %2$s</string>
  <string name="report_week_budget">Weekly time budget</string>
  <string name="report_week_remaining">Remaining time · %1$s</string>
+ <string name="count_work_remaining">Count work in remaining time</string>
+ <string name="count_work_remaining_explanation">When off, scheduled working hours are not counted in the remaining time until bedtime.</string>
 </resources>

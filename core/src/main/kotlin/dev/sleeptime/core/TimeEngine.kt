@@ -129,4 +129,33 @@ object TimeEngine {
   val today = now.atZone(config.prefs.zone()).toLocalDate()
   return merge((0L..14L).flatMap { resolvedDay(config, today.plusDays(it), holidays) }.filter { it.kind == Kind.WORK }).firstOrNull { it.end > now }
  }
+ fun remainingToBedtime(
+  config: Configuration,
+  now: Instant,
+  sleep: SleepOccurrence?,
+  snoozed: Instant? = null,
+  holidays: HolidayProvider? = null
+ ): Duration {
+  if (sleep == null) return Duration.ZERO
+  val target = snoozed ?: sleep.start
+  if (now >= target) return Duration.between(target, now)
+  val total = Duration.between(now, target)
+  if (config.prefs.countWorkRemaining) return total
+  val holidayProvider = holidays ?: object : HolidayProvider {
+   override fun status(date: LocalDate, region: HolidayRegion) = HolidayState.WORKDAY
+   override fun getDataStatus(region: HolidayRegion, year: Int) = HolidayDataStatus(null, null, "", true)
+  }
+  val zone = config.prefs.zone()
+  val startDate = now.atZone(zone).toLocalDate()
+  val endDate = target.atZone(zone).toLocalDate()
+  val workSpans = generateSequence(startDate) { it.plusDays(1) }
+   .takeWhile { !it.isAfter(endDate) }
+   .flatMap { resolvedDay(config, it, holidayProvider) }
+   .filter { it.kind == Kind.WORK }
+   .toList()
+  val merged = merge(workSpans)
+  val workDuration = merged.mapNotNull { clip(it, now, target) }
+   .fold(Duration.ZERO) { acc, span -> acc + Duration.between(span.start, span.end) }
+  return maxOf(Duration.ZERO, total.minus(workDuration))
+ }
 }

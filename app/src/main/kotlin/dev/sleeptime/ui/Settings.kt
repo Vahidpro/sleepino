@@ -132,6 +132,7 @@ import kotlinx.coroutines.withContext
     }
    }) {
     SettingsLink(R.string.overrides){onEditor("overrides")}
+    SwitchRow(R.string.count_work_remaining,p.countWorkRemaining,{v->prefs{it.copy(countWorkRemaining=v)}},R.string.count_work_remaining_explanation)
     ChoiceRow(R.string.week_start,p.weekStart,(1..7).map {it to DayOfWeek.of(it).getDisplayName(DayNameStyle.FULL,locale)}){v->prefs{it.copy(weekStart=v)}}
     ChoiceRow(R.string.holiday_region,p.region,listOf(HolidayRegion.IRAN to stringResource(R.string.iran),HolidayRegion.US to stringResource(R.string.united_states),HolidayRegion.NONE to stringResource(R.string.no_holidays))){v->prefs{it.copy(region=v)}}
     var zone by remember(p.zoneId){mutableStateOf(p.zoneId)}
@@ -240,7 +241,7 @@ import kotlinx.coroutines.withContext
   item(key="data", contentType="group") {
    SettingsGroup("data",R.string.data,Icons.Rounded.FolderOpen,expanded,{expanded=it},quick={
     QuickActions {
-     AssistChip(onClick={export.launch("sleep-time-backup-${LocalDate.now()}.json")},label={Text(stringResource(R.string.export_backup))})
+     AssistChip(onClick={export.launch("sleepino-backup-${LocalDate.now()}.json")},label={Text(stringResource(R.string.export_backup))})
      AssistChip(onClick={restore.launch(arrayOf("application/json","text/plain","application/octet-stream"))},label={Text(stringResource(R.string.import_backup))})
     }
    }) {
