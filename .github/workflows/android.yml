@@ -25,7 +25,7 @@ jobs:
           ./gradlew :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: sleep-and-time-debug
+          name: sleepino-debug
           path: app/build/outputs/apk/debug/*.apk
       - name: Tagged unsigned release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -33,5 +33,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: startsWith(github.ref, 'refs/tags/v')
         with:
-          name: sleep-and-time-unsigned-release
+          name: sleepino-unsigned-release
           path: app/build/outputs/apk/release/*.apk

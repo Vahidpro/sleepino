@@ -1,4 +1,4 @@
-# Sleep & Time · خواب و زمان
+# sleepino
 
 A native, offline Android bedtime and personal time-budget assistant. Kotlin + Jetpack Compose; Persian and English. The visual direction is calm, spacious, and dashboard-first: a large celestial bedtime card, gentle violet/teal accents, clear time summaries, and focused bottom-sheet editors. No account, ads, analytics, or backend.
 

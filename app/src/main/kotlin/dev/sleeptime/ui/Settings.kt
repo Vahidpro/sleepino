@@ -112,7 +112,7 @@ import java.time.format.TextStyle
   }}
   item {SettingsGroup("data",R.string.data,Icons.Rounded.FolderOpen,expanded,{expanded=it}) {
    Text(stringResource(R.string.backup_hint),style=MaterialTheme.typography.bodySmall)
-   SettingsLink(R.string.export_backup){export.launch("sleep-time-backup-${LocalDate.now()}.json")}
+   SettingsLink(R.string.export_backup){export.launch("sleepino-backup-${LocalDate.now()}.json")}
    SettingsLink(R.string.import_backup){restore.launch(arrayOf("application/json","text/plain","application/octet-stream"))}
    SettingsLink(R.string.import_holidays){holidayImport.launch(arrayOf("application/json","text/plain"))}
    TextButton(onClick={reset=true}){Text(stringResource(R.string.reset),color=MaterialTheme.colorScheme.error)}
