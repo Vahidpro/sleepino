@@ -1,12 +1,12 @@
-# sleepino
+# 🌙 sleepino
 
-A native, offline Android bedtime and personal time-budget assistant built with **Kotlin** and **Jetpack Compose** in **English** and **Persian**.
+A native, offline-first Android bedtime and personal time-budget assistant built with **Kotlin** and **Jetpack Compose** in **English** and **Persian (فارسی)**.
 
-Its visual direction is calm, spacious, and dashboard-first: a full-screen celestial bedtime sky that evolves throughout the day, gentle violet/teal accents, clear weekly time-budget summaries, and focused bottom-sheet editors—with **no account, ads, analytics, or backend**.
+Its visual direction is calm, spacious, and dashboard-first: a full-screen celestial bedtime sky that evolves through nine solar and sleep phases, gentle violet/teal accents, clear weekly time-budget summaries, and focused bottom-sheet editors—with **no accounts, no ads, no analytics, and no backend**.
 
 ---
 
-## Screenshots — All App States
+## 📸 Screenshots — All App States
 
 ### Solar & Daytime Phases
 
@@ -34,30 +34,69 @@ Its visual direction is calm, spacious, and dashboard-first: a full-screen celes
 
 ---
 
-## Features
+## ✨ Features
 
-- **Dynamic Sky & Bedtime Countdown**
-  - Full-page animated sky spanning nine phases: **Dawn**, **Morning**, **Day**, **Golden Hour**, **Twilight**, **Night**, **Wind-Down**, **Overdue**, and **Resting**.
-  - When bedtime passes, the **Overdue** state shifts into a dark obsidian-eclipse sky with an orbiting bedtime trail, falling sandman stardust, calm breathing rings, and rising `Z` sleep cues to gently nudge you to bed without harsh glare.
-  - **I’m going to sleep** and **Snooze** actions appear 30 minutes before bedtime and remain available while overdue. Swipe horizontally (or tap the corner icon) for Reports, and open Settings from the top corner.
-- **Flexible Weekly & Override Schedules**
-  - Independent weekly **Sleep**, **Work**, and **Exercise** schedules.
-  - Apply a bedtime and wake time across selected weekdays with the circular picker, or customize individual days with overnight intervals, work breaks, target sleep durations, and single-date overrides.
-- **Smart Reminders, Snooze & Do Not Disturb**
-  - Custom reminder stages, bounded overdue repeats, cancellable snooze, duplicate-safe reported-bedtime confirmation, and icon-only undo.
-  - `AlarmManager` scheduling with optional exact-alarm access, boot/timezone/clock rescheduling, and a `WorkManager` recovery sweep.
-  - Optional activity-aware overdue suppression with scheduled fallback, optional distracting-app awareness at reminder times, and a shortcut to Android Digital Wellbeing.
-  - App-owned Do Not Disturb rule on Android 10+, preserving other rules and respecting user-disabled or deleted rules.
-- **Storage, Localization & System Integration**
-  - Room bedtime/routine history, DataStore configuration, JSON backup/restore via Android’s file picker, and locally imported holiday updates.
-  - English and Persian with automatic RTL/LTR layouts, bundled **Estedad** and system sans-serif typography, Persian numerals, Jalali calendar dates, 12/24-hour clocks, eight accent presets, Light/Dark/AMOLED themes, dynamic colors, and **Reduce motion** support.
-  - Bedtime and free-time home screen widgets, plus a Quick Settings sleep-confirmation tile.
+### 🌙 Celestial Bedtime Dashboard
+- **Dynamic Sky Countdown**: Full-bleed animated sky canvas spanning nine phases—**Dawn**, **Morning**, **Day**, **Golden Hour**, **Twilight**, **Night**, **Wind-Down**, **Overdue**, and **Resting**—with smooth color transitions.
+- **Dark Eclipse Overdue Experience**: When bedtime passes, the overdue state shifts into a soothing dark obsidian-midnight sky featuring a breathing lunar eclipse, an orbiting bedtime clock trail, falling sandman stardust motes, and rising `Z` sleep cues to nudge you to bed without harsh glare.
+- **Fluid Hand-Crafted Motion**: Animated sun rays, gliding morning birds, twinkling stars, shooting stars, drifting layered clouds, and breathing halos—with full **Reduce motion** support.
+- **Sleep & Snooze Controls**: **I’m going to sleep** and **Snooze** buttons appear 30 minutes before bedtime and remain reachable while overdue, alongside cancellable snooze and one-tap confirmation with icon-only undo.
+- **Intuitive Navigation**: Swipe horizontally (or tap the corner bar-chart icon) to open weekly Reports & Statistics, and tap the corner gear icon to open Settings.
+
+### ⏰ Flexible Schedule & Time-Budget Management
+- **Independent Weekly Schedules**: Dedicated planners for **Sleep**, **Work**, and **Exercise**.
+- **Circular Time Picker**: Fast weekday-batch bedtime/wake setup plus per-day customization.
+- **Overnight & Shift Support**: Handles overnight intervals, work mid-shift breaks, target sleep durations, and single-date overrides (days off, explicit work on holidays, or custom bedtimes).
+- **Personal Time Budget**: Mutually exclusive daily and weekly breakdowns (`Sleep` → `Work` → `Exercise` → `Free`) with remaining free-time tracking, DST-safe `java.time` boundaries, and work/rest day badges.
+
+### 🔔 Smart Reminders & Sleep Protection
+- **Multi-Stage Reminders**: Configurable pre-bedtime reminder stages, bounded overdue repeat intervals, and snooze limits capped before wake time.
+- **Reliable Scheduling**: `AlarmManager` scheduling with optional exact-alarm (`SCHEDULE_EXACT_ALARM`) support, automatic reconstruction across reboots, timezone shifts, clock changes, and app updates, plus a 12-hour `WorkManager` recovery sweep.
+- **App-Owned Do Not Disturb**: Automated `AutomaticZenRule` on Android 10+ that preserves other system rules and respects user-disabled or deleted rules.
+- **Wellbeing & Activity Awareness**: Optional Usage Access sampling at reminder times for inactivity-based overdue suppression and distracting-app alerts, plus a direct shortcut to Android Digital Wellbeing—without storing any usage history.
+- **Duplicate-Safe Confirmation**: Room primary-key protection prevents duplicate bedtime records across notifications, home shortcuts, and the Quick Settings tile.
+
+### 🌍 Localization & Calendar System
+- **Bilingual Experience**: Complete **English** and **Persian (فارسی)** support with automatic LTR/RTL layout direction.
+- **Persian Typography & Digits**: Bundled **Estedad** font with automatic Persian numeral formatting.
+- **Jalali & Gregorian Calendars**: Built-in Solar Hijri (Jalali) and Gregorian date formatting, 12-hour/24-hour clocks, configurable week start, and independent timezone/holiday-region selection.
+- **Accurate Holiday Engine**: Astronomical Iranian lunar calendar mappings and 28 bundled recurrence holiday rules, with explicit provisional labeling outside validated year coverage.
+
+### 🎨 Personalization & Theming
+- **Curated Color Palettes**: 8 distinctive accent color presets (`Violet`, `Rose`, and more).
+- **Display Modes**: System, **Light**, **Dark**, **True Black (AMOLED)**, and Android 12+ **Material You** dynamic wallpaper colors.
+- **Customizable Home Badges**: Toggle visibility of the calendar year, bedtime chip, and work/rest day badge.
+- **Accessibility**: Minimum `48dp` touch targets, merged semantic descriptions, dynamic font scaling, and reduced-motion snapping.
+
+### 📱 Android System Integrations
+- **Home Screen Widgets**: Jetpack **Glance** widgets for quick bedtime countdowns and remaining free-time tracking.
+- **Quick Settings Tile**: One-tap sleep confirmation tile (`BedtimeTile`) directly in Android’s Quick Settings shade.
+- **App Shortcut**: `SLEEP_FROM_SHORTCUT` action for instant bedtime confirmation.
+
+### 🔒 100% Private & Offline-First
+- **Zero Tracking**: No account, no ads, no analytics, no telemetry, and no backend servers.
+- **Local Storage**: All schedules and history stay on-device via **Room** (bedtime/routine records) and **DataStore** (preferences and active session).
+- **Data Portability**: Full JSON backup & restore through Android’s Storage Access Framework document picker, plus locally imported holiday JSON updates.
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+| Layer | Technologies & Libraries |
+| :--- | :--- |
+| **Language & Build** | **Kotlin** `2.2.21` · **Android Gradle Plugin** `9.5.3` · **KSP** `2.3.6` · **JDK 21** (JVM 17 target) · **R8** release minification |
+| **Modules** | `:core` (pure Kotlin/JVM immutable models, interval algebra, holiday/calendar engine, reminder state machine) · `:app` (Android UI & platform integrations) |
+| **UI & Animation** | **Jetpack Compose** (`compose-bom` `2026.03.01`) · **Material 3** (`material3`, `material-icons-extended`) · Custom `Canvas` celestial graphics · **Material You** Dynamic Color |
+| **Architecture & DI** | Unidirectional `StateFlow` MVVM (`AppViewModel`) · **Dagger Hilt** `2.57.2` · **Navigation Compose** `2.9.7` · **Kotlin Coroutines** `1.10.2` |
+| **Persistence** | **Room** `2.8.4` (`room-runtime`, `room-ktx`, checked-in schema v1) · **DataStore Preferences** `1.2.1` · **`kotlinx.serialization` JSON** `1.9.0` |
+| **Android Platform** | **WorkManager** `2.11.1` · **Jetpack Glance** `1.1.1` (`glance-appwidget`, `glance-material3`) · `AlarmManager` · `AutomaticZenRule` (DND) · `UsageStatsManager` · `TileService` · Storage Access Framework |
+| **Testing & Lint** | **JUnit** `4.13.2` · **Compose UI Test** (`ui-test-junit4`) · **Android Lint** (`abortOnError = true`, `checkReleaseBuilds = true`) |
 
 No production history or personal schedule is prefilled. Onboarding can be completed with sections unconfigured; schedules are saved only through explicit editing.
 
 ---
 
-## Open and Run
+## 🚀 Open and Run
 
 1. Install a current stable Android Studio with **JDK 21**, Android SDK **36**, and Build Tools **36.0.0**.
 2. Open this repository as a Gradle project and allow dependency sync.
@@ -70,9 +109,9 @@ From a terminal:
 ./gradlew :app:assembleDebug
 ```
 
-On Windows use `gradlew.bat`. The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. No signing secrets are needed. For a local release build use `./gradlew :app:assembleRelease`.
+On Windows use `gradlew.bat`. The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. No signing secrets are needed. For a local release build (universal + per-ABI splits) use `./gradlew :app:assembleRelease`.
 
-### CI/CD and Releases
+### 🔄 CI/CD and Releases
 
 - **Android CI (`android.yml`)**: Runs automatically on pull requests and pushes to `main`. Executes unit tests (`:core:test`, `:app:testDebugUnitTest`), lint (`:app:lintDebug`), and builds the debug APK artifact.
 - **Automated Release Pipeline (`release.yml`)**: Automatically builds, signs, hashes, and publishes release assets whenever `versionName` in `app/build.gradle.kts` is bumped on `main`, a `v*` tag (e.g. `v1.1.0`) is pushed, a GitHub Release is published, or `workflow_dispatch` is triggered.
@@ -81,7 +120,7 @@ On Windows use `gradlew.bat`. The debug APK is written to `app/build/outputs/apk
 
 ---
 
-## Holiday Data
+## 📅 Holiday Data
 
 Holiday rules come **only** from [`persian-calendar/events`](https://github.com/persian-calendar/events), commit **503bb203ac50a0ca79f36840ef74e1eee7eabb1d**, filtering exactly `type == "Iran" && holiday == true`. The bundled adapter has **28 rules**, supports simple and end-of-month recurrence, honors beginning/end Persian-year metadata, and removes all names/descriptions. No GPL app or calendar implementation is copied.
 
@@ -91,13 +130,13 @@ Outside validated coverage, status is **unknown**, and the dashboard explicitly 
 
 ---
 
-## Performance
+## ⚡ Performance
 
 Responsive startup, swipes, and settings controls are product requirements. The home view refreshes at minute boundaries and at snooze expiration. It reuses daily and weekly schedule calculations between clock updates, and the reports page loads other weeks off the UI thread. Settings loads installed apps when their picker opens. Judge startup and gesture performance on a release build with R8 enabled.
 
 ---
 
-## Verification & Documentation
+## ✅ Verification & Documentation
 
 The JVM time engine has automated tests for overlapping reservations, overnight work, sleep ownership, holidays/overrides, every week start, remaining budgets, 23/25-hour days, DST gaps/overlaps, date conversion, validity limits, and reminder transitions. Android compilation and lint should be run with the commands above. Device/emulator permission, OEM notification, DND, widget, and accessibility checks are listed in [the device checklist](docs/DEVICE_TESTING.md); no device certification is implied by source-level checks.
 
