@@ -1,50 +1,29 @@
-# Sleepino 1.0.0 Release Notes
+# Sleepino 1.1.0 Release Notes
 
-We are thrilled to announce **Sleepino 1.0.0** — the first official release of the native, offline Android bedtime and personal time-budget assistant built with Kotlin and Jetpack Compose.
-
----
-
-## 🌟 What's New in Version 1.0.0
-
-### 🌙 Celestial Bedtime Dashboard
-- **Dynamic Sky Countdown**: A full-page celestial bedtime countdown featuring daytime skies, starry nights, and overdue alerts.
-- **Sleep & Snooze Controls**: Convenient actions available during the last 30 minutes before bed and throughout overdue periods.
-- **Fluid Motion**: Hand-crafted celestial transitions (sun, moon, twinkling stars, drifting clouds, and birds) with reduced-motion support.
-- **Intuitive Gestures**: Swipe horizontally to navigate weekly reports and swipe down from the top to access Settings.
-
-### ⏰ Flexible Schedule Management
-- **Independent Schedules**: Dedicated weekly planners for sleep, work, and exercise.
-- **Circular Time Picker**: Quick setup for standard bedtimes and wake times, with full support for day-by-day custom adjustments.
-- **Overnight & Shift Support**: Seamless handling of overnight shifts, mid-shift breaks, custom target sleep durations, and date overrides.
-
-### 🔔 Smart Reminders & Sleep Protection
-- **Multi-Stage Reminders**: Bounded overdue notifications, customizable advance alerts, and cancellable snooze.
-- **Reliable Scheduling**: `AlarmManager` with exact-alarm access, automatic rescheduling across device reboots and timezone shifts, plus a `WorkManager` background recovery sweep.
-- **App-Owned Do Not Disturb**: Automated DND rule on Android 10+ that respects user preferences and existing system rules.
-- **Wellbeing Awareness**: Optional distracting-app alerts near bedtime with direct shortcuts to Android Digital Wellbeing settings.
-- **Duplicate-Safe Confirmation**: One-tap bedtime confirmation with an instant undo action.
-
-### 🌍 Localization & Calendar System
-- **Bilingual Experience**: Complete English and Persian (فارسی) support with native LTR and RTL layouts.
-- **Persian Typography & Digits**: Beautiful Estedad typography paired with automatic Persian digits.
-- **Jalali & Gregorian Dates**: Built-in Solar Hijri (Jalali) and Gregorian calendars, with 12-hour and 24-hour clock formats.
-- **Accurate Holiday Engine**: Astronomical Iranian lunar calendar mappings and bundled recurrence holiday rules.
-
-### 🎨 Personalization & Theming
-- **Curated Color Palettes**: 8 distinctive color presets.
-- **Display Modes**: Light, Dark, true AMOLED black, and dynamic Material You system theming.
-- **Accessibility**: First-class reduced motion and high-contrast support.
-
-### 📱 Android System Integrations
-- **Home Screen Widgets**: Jetpack Glance widgets for quick bedtime countdowns and free-time budget tracking.
-- **Quick Settings Tile**: One-tap sleep confirmation tile directly in your Android notification shade.
-
-### 🔒 100% Private & Offline-First
-- **Zero Tracking**: No account required, no ads, no analytics, and no external servers.
-- **Local Storage**: All data stays on your device using encrypted Room database storage and DataStore preferences.
-- **Data Portability**: Full JSON backup and restore via Android's system document picker.
+**Sleepino 1.1.0** refines the bedtime experience with a new dark-mode past-bedtime sky animation, a full-bleed celestial canvas, expanded documentation screenshots, and automated per-architecture APK builds with SHA-256 verification.
 
 ---
 
-### 📦 Installation
-Download `sleepino-v1.0.0.apk` attached below and install it directly on any device running Android 8.0 (API 26) or higher.
+## ✨ What's New in Version 1.1.0
+
+### 🌑 Dark Eclipse Overdue Experience
+- **Night-Friendly Obsidian Palette**: Replaced the bright red overdue state with a soothing deep obsidian-midnight sky and warm candlelight-amber highlights that stay gentle on tired eyes at night.
+- **Purposeful Bedtime Animations**: Added a breathing lunar eclipse, an orbiting celestial clock trail, falling sandman stardust motes, and rising `Z` sleep cues to clearly communicate that bedtime has passed.
+- **Edge-to-Edge Sky Canvas**: Removed horizontal container bounds around the sky illustration so animations flow seamlessly from edge to edge.
+
+### 📦 Automated Multi-Architecture & Verified Releases
+- **Per-Architecture & Universal APKs**: Releases now include `universal`, `arm64-v8a`, `armeabi-v7a`, `x86_64`, and `x86` APKs.
+- **SHA-256 Checksums**: Every release includes individual `.sha256` files, a combined `SHA256SUMS.txt`, and the APK signing certificate SHA-256 fingerprint.
+
+---
+
+## 🌙 Core Features
+- **Dynamic Sky Countdown**: Nine celestial and sleep-lifecycle phases (`Dawn`, `Morning`, `Day`, `Golden Hour`, `Twilight`, `Night`, `Wind-Down`, `Overdue`, and `Resting`) with reduced-motion support.
+- **Flexible Weekly & One-Day Schedules**: Independent sleep, work, and exercise schedules with overnight shifts, breaks, duration targets, and single-date overrides.
+- **Smart Reminders & Focus**: Bounded overdue reminders, cancellable snooze, exact-alarm scheduling, app-owned Do Not Disturb (Android 10+), and optional Digital Wellbeing / distraction alerts.
+- **Bilingual & Offline-First**: English and Persian (RTL, Estedad typography, Persian digits, Jalali calendar), 8 accent presets, Light/Dark/AMOLED/Dynamic themes, Room + DataStore local storage, JSON backup/restore, home widgets, and Quick Settings tile.
+
+---
+
+### 📲 Installation
+Choose the APK matching your device architecture (or `universal` if unsure), verify its SHA-256 checksum below, and install on **Android 8.0 (API 26) or newer**.

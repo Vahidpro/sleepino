@@ -9,14 +9,26 @@ plugins {
 android {
  namespace = "pasac.sleepino"
  compileSdk = 36
+ val buildReleaseSplits = gradle.startParameter.taskNames.any {
+  it.contains("Release", ignoreCase = true)
+ } || providers.gradleProperty("splitAbi").orNull == "true"
+
  defaultConfig {
   applicationId = "pasac.sleepino"
   minSdk = 26
   targetSdk = 36
-  versionCode = 1
-  versionName = "1.0.0"
+  versionCode = providers.gradleProperty("versionCode").orNull?.toIntOrNull() ?: 2
+  versionName = providers.gradleProperty("versionName").orNull ?: "1.1.0"
   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   vectorDrawables.useSupportLibrary = true
+ }
+ splits {
+  abi {
+   isEnable = buildReleaseSplits
+   reset()
+   include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+   isUniversalApk = true
+  }
  }
  buildFeatures { compose = true; buildConfig = true }
  compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }

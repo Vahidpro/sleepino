@@ -14,6 +14,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
@@ -89,8 +90,6 @@ fun SettingsScreen(
 ) {
  val context = LocalContext.current
  val p = s.config.prefs
- val locale = LocalConfiguration.current.locales[0]
- var activeModal by rememberSaveable { mutableStateOf<SettingsModal?>(null) }
  var checkPermission by remember { mutableIntStateOf(0) }
  LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { checkPermission++ }
 
@@ -120,9 +119,7 @@ fun SettingsScreen(
   }
  }
 
- var reset by remember { mutableStateOf(false) }
  val backup by vm.pendingBackup.collectAsState()
-
  val notificationsAllowed by produceState<Boolean?>(null, context, checkPermission) {
   value = withContext(Dispatchers.IO) { Notifications(context).allowed() }
  }
@@ -131,6 +128,68 @@ fun SettingsScreen(
  }
  val dndAllowed = remember(checkPermission, p.dnd) { vm.controller.dnd.allowed() }
  val exactAllowed = remember(checkPermission, p.preciseAlarms) { vm.controller.canBePrecise() }
+ val holidayStatus by produceState<HolidayDataStatus?>(null, vm.holidays, p.region, s.now, p.zoneId, s.holidayRevision) {
+  value = if (p.region == HolidayRegion.IRAN) {
+   withContext(Dispatchers.IO) { vm.holidays.getDataStatus(p.region, s.now.atZone(p.zone()).year) }
+  } else null
+ }
+
+ SettingsContent(
+  s = s,
+  onBack = onBack,
+  onEditor = onEditor,
+  onUpdate = vm::update,
+  notificationsAllowed = notificationsAllowed,
+  usageAllowed = usageAllowed,
+  dndAllowed = dndAllowed,
+  exactAllowed = exactAllowed,
+  holidayStatus = holidayStatus,
+  pendingBackup = backup,
+  onEnableDndRule = { vm.controller.dnd.enableNewRule() },
+  onRequestNotifications = requestNotificationAccess,
+  onOpenIntent = ::open,
+  onPickSound = { sound.launch(arrayOf("audio/*")) },
+  onExportBackup = { export.launch(it) },
+  onImportBackup = { restore.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
+  onImportHolidays = { holidayImport.launch(arrayOf("application/json", "text/plain")) },
+  onConfirmRestore = vm::restore,
+  onDismissRestore = { vm.pendingBackup.value = null },
+  onReset = vm::reset
+ )
+}
+
+@Composable
+internal fun SettingsContent(
+ s: DashboardState,
+ onBack: () -> Unit,
+ onEditor: (String) -> Unit,
+ onUpdate: ((Configuration) -> Configuration) -> Unit = {},
+ notificationsAllowed: Boolean? = true,
+ usageAllowed: Boolean? = true,
+ dndAllowed: Boolean = true,
+ exactAllowed: Boolean = true,
+ holidayStatus: HolidayDataStatus? = null,
+ pendingBackup: Backup? = null,
+ onEnableDndRule: () -> Unit = {},
+ onRequestNotifications: () -> Unit = {},
+ onOpenIntent: (Intent) -> Unit = {},
+ onPickSound: () -> Unit = {},
+ onExportBackup: (String) -> Unit = {},
+ onImportBackup: () -> Unit = {},
+ onImportHolidays: () -> Unit = {},
+ onConfirmRestore: () -> Unit = {},
+ onDismissRestore: () -> Unit = {},
+ onReset: () -> Unit = {},
+ initialScrollIndex: Int = 0
+) {
+ val context = LocalContext.current
+ val p = s.config.prefs
+ val locale = LocalConfiguration.current.locales[0]
+ var activeModal by rememberSaveable { mutableStateOf<SettingsModal?>(null) }
+ var reset by remember { mutableStateOf(false) }
+ val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialScrollIndex)
+
+ fun prefs(f: (Preferences) -> Preferences) { onUpdate { it.copy(prefs = f(it.prefs)) } }
 
  val today = remember(s.now, p.zoneId) { s.now.atZone(p.zone()).toLocalDate() }
  val upcomingOverrides = remember(s.config.overrides, today) {
@@ -139,6 +198,7 @@ fun SettingsScreen(
 
  LazyColumn(
   Modifier.fillMaxSize().widthIn(max = 800.dp),
+  state = listState,
   contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
   verticalArrangement = Arrangement.spacedBy(18.dp)
  ) {
@@ -215,7 +275,7 @@ fun SettingsScreen(
      checked = p.dnd,
      onClick = { activeModal = SettingsModal.DND },
      onCheckedChange = { enabled ->
-      if (enabled) vm.controller.dnd.enableNewRule()
+      if (enabled) onEnableDndRule()
       prefs { it.copy(dnd = enabled) }
      }
     )
@@ -256,11 +316,7 @@ fun SettingsScreen(
      )
     ) { v -> prefs { it.copy(region = v) } }
     if (p.region == HolidayRegion.IRAN) {
-     val year = s.now.atZone(p.zone()).year
-     val status by produceState<HolidayDataStatus?>(null, vm.holidays, p.region, year, s.holidayRevision) {
-      value = withContext(Dispatchers.IO) { vm.holidays.getDataStatus(p.region, year) }
-     }
-     status?.let { coverage ->
+     holidayStatus?.let { coverage ->
       val from = coverage.validFrom
       val to = coverage.validTo
       val covText = if (from != null && to != null && coverage.reliable) {
@@ -272,7 +328,7 @@ fun SettingsScreen(
        horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
        Text(covText, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-       TextButton(onClick = { holidayImport.launch(arrayOf("application/json", "text/plain")) }) {
+       TextButton(onClick = onImportHolidays) {
         Text(stringResource(R.string.update_holiday_file))
        }
       }
@@ -329,7 +385,7 @@ fun SettingsScreen(
      title = R.string.notifications,
      subtitle = permissionLabel(notificationsAllowed == true),
      subtitleColor = if (notificationsAllowed == false) WarningAmber else MaterialTheme.colorScheme.onSurfaceVariant,
-     onClick = requestNotificationAccess
+     onClick = onRequestNotifications
     )
     RowDivider()
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -341,7 +397,7 @@ fun SettingsScreen(
      )
      if (Build.VERSION.SDK_INT >= 31 && p.preciseAlarms && !exactAllowed) {
       TextButton(
-       onClick = { open(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, "package:${context.packageName}".toUri())) },
+       onClick = { onOpenIntent(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, "package:${context.packageName}".toUri())) },
        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
       ) {
        Text(stringResource(R.string.needs_system_permission), color = WarningAmber)
@@ -352,17 +408,17 @@ fun SettingsScreen(
     SettingsLink(
      title = R.string.usage_access,
      subtitle = permissionLabel(usageAllowed == true)
-    ) { open(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }
+    ) { onOpenIntent(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }
     RowDivider()
     SettingsLink(
      title = R.string.dnd_access,
      subtitle = permissionLabel(dndAllowed)
-    ) { open(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) }
+    ) { onOpenIntent(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) }
     RowDivider()
     SettingsLink(
      title = R.string.battery,
      subtitle = stringResource(R.string.battery_subtitle)
-    ) { open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri())) }
+    ) { onOpenIntent(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri())) }
    }
   }
 
@@ -370,11 +426,11 @@ fun SettingsScreen(
   item(key = "data", contentType = "group") {
    SettingsSection(R.string.data_and_about) {
     SettingsLink(R.string.export_backup) {
-     export.launch("sleepino-backup-${LocalDate.now()}.json")
+     onExportBackup("sleepino-backup-${LocalDate.now()}.json")
     }
     RowDivider()
     SettingsLink(R.string.import_backup) {
-     restore.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
+     onImportBackup()
     }
     RowDivider()
     Row(
@@ -402,17 +458,17 @@ fun SettingsScreen(
    config = s.config,
    notificationsAllowed = notificationsAllowed == true,
    usageAllowed = usageAllowed == true,
-   onRequestNotifications = requestNotificationAccess,
-   onRequestUsageAccess = { open(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
-   onPickSound = { sound.launch(arrayOf("audio/*")) },
-   onUpdate = vm::update,
+   onRequestNotifications = onRequestNotifications,
+   onRequestUsageAccess = { onOpenIntent(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
+   onPickSound = onPickSound,
+   onUpdate = onUpdate,
    onDismiss = { activeModal = null }
   )
   SettingsModal.DND -> DndSheet(
    p = p,
    locale = locale,
    dndAllowed = dndAllowed,
-   onRequestDndAccess = { open(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) },
+   onRequestDndAccess = { onOpenIntent(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) },
    onUpdate = { f -> prefs(f) },
    onDismiss = { activeModal = null }
   )
@@ -420,8 +476,8 @@ fun SettingsScreen(
    p = p,
    locale = locale,
    usageAllowed = usageAllowed == true,
-   onRequestUsageAccess = { open(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
-   onOpenDigitalWellbeing = { open(Intent("android.settings.WELLBEING_SETTINGS")) },
+   onRequestUsageAccess = { onOpenIntent(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
+   onOpenDigitalWellbeing = { onOpenIntent(Intent("android.settings.WELLBEING_SETTINGS")) },
    onChange = { pkgs -> prefs { it.copy(distractionPackages = pkgs) } },
    onDismiss = { activeModal = null }
   )
@@ -435,11 +491,11 @@ fun SettingsScreen(
   null -> {}
  }
 
- if (backup != null) {
-  ConfirmDialog(R.string.restore_title, R.string.restore_body, { vm.restore() }, { vm.pendingBackup.value = null })
+ if (pendingBackup != null) {
+  ConfirmDialog(R.string.restore_title, R.string.restore_body, onConfirmRestore, onDismissRestore)
  }
  if (reset) {
-  ConfirmDialog(R.string.reset, R.string.reset_body, { vm.reset(); reset = false }, { reset = false })
+  ConfirmDialog(R.string.reset, R.string.reset_body, { onReset(); reset = false }, { reset = false })
  }
 }
 

@@ -120,13 +120,15 @@ import kotlin.math.sin
    )
   }
   Column(
-   Modifier.widthIn(max = 760.dp).fillMaxSize()
-    .padding(start = 18.dp, top = if (compact) 8.dp else 14.dp, end = 18.dp, bottom = if (compact) 12.dp else 24.dp),
+   Modifier.fillMaxSize()
+    .padding(top = if (compact) 8.dp else 14.dp, bottom = if (compact) 12.dp else 24.dp),
    horizontalAlignment = Alignment.CenterHorizontally
   ) {
    Box(
     Modifier
+     .widthIn(max = 760.dp)
      .fillMaxWidth()
+     .padding(horizontal = 18.dp)
      .heightIn(min = if (compact) 40.dp else 48.dp),
     contentAlignment = Alignment.Center
    ) {
@@ -183,7 +185,7 @@ import kotlin.math.sin
     modifier = Modifier.fillMaxWidth().weight(1f)
    )
    Column(
-    Modifier.widthIn(max = 560.dp).fillMaxWidth(),
+    Modifier.padding(horizontal = 18.dp).widthIn(max = 560.dp).fillMaxWidth(),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 12.dp)
    ) {
@@ -260,6 +262,7 @@ import kotlin.math.sin
    if (showDayBadge || showSleepBadge) {
     Spacer(Modifier.weight(if (compact) .12f else .22f))
     FlowRow(
+     modifier = Modifier.padding(horizontal = 18.dp),
      horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
      verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -408,13 +411,13 @@ private fun skyPalette(phase: SkyPhase): SkyPalette = when (phase) {
   actionInk = Color(0xFF1E1A42)
  )
  SkyPhase.OVERDUE -> SkyPalette(
-  top = Color(0xFF7D2A3E),
-  mid = Color(0xFF963A4D),
-  bottom = Color(0xFF4F1021),
-  ink = Color.White,
-  muted = Color(0xFFFCE4E7),
-  actionColor = Color(0xFFFFD9DD),
-  actionInk = Color(0xFF541022)
+  top = Color(0xFF050711),
+  mid = Color(0xFF0F1426),
+  bottom = Color(0xFF04050B),
+  ink = Color(0xFFF6F1E7),
+  muted = Color(0xFFD4C5AF),
+  actionColor = Color(0xFFF0C27B),
+  actionInk = Color(0xFF1D1408)
  )
  SkyPhase.RESTING -> SkyPalette(
   top = Color(0xFF060C1C),
@@ -521,6 +524,28 @@ internal fun SkyIllustration(
    repeatMode = RepeatMode.Restart
   ),
   label = "morning-flight"
+ )
+
+ val sleepCycle by if (reduced) remember { mutableFloatStateOf(0.35f) }
+ else transition.animateFloat(
+  initialValue = 0f,
+  targetValue = 1f,
+  animationSpec = infiniteRepeatable(
+   animation = tween(durationMillis = 7200, easing = LinearEasing),
+   repeatMode = RepeatMode.Restart
+  ),
+  label = "sleep-cycle"
+ )
+
+ val breath by if (reduced) remember { mutableFloatStateOf(0.45f) }
+ else transition.animateFloat(
+  initialValue = 0f,
+  targetValue = 1f,
+  animationSpec = infiniteRepeatable(
+   animation = tween(durationMillis = 4600, easing = FastOutSlowInEasing),
+   repeatMode = RepeatMode.Reverse
+  ),
+  label = "sleep-breath"
  )
 
  Box(modifier = modifier) {
@@ -687,7 +712,228 @@ internal fun SkyIllustration(
      )
     }
 
-    SkyPhase.NIGHT, SkyPhase.WIND_DOWN, SkyPhase.OVERDUE, SkyPhase.RESTING -> {
+    SkyPhase.OVERDUE -> {
+     val orbit = Offset(size.width * .50f, size.height * .52f + bob * 1.15f)
+
+     // Deep nocturnal nebula & subtle warm lantern ember behind the eclipsed moon
+     drawCircle(
+      Brush.radialGradient(
+       listOf(Color(0xFF1D2B59).copy(alpha = .24f), Color.Transparent),
+       center = Offset(size.width * .22f, size.height * .26f),
+       radius = size.width * .65f
+      ),
+      size.width * .65f,
+      Offset(size.width * .22f, size.height * .26f)
+     )
+     drawCircle(
+      Brush.radialGradient(
+       listOf(Color(0xFF8A5424).copy(alpha = .16f), Color.Transparent),
+       center = orbit,
+       radius = radius * 2.5f
+      ),
+      radius * 2.5f,
+      orbit
+     )
+
+     // Soft horizon depth glow (radial only, no rectangular clip edges)
+     drawCircle(
+      Brush.radialGradient(
+       listOf(Color(0x5503040A), Color.Transparent),
+       center = Offset(size.width * .50f, size.height * .92f),
+       radius = size.width * .85f
+      ),
+      size.width * .85f,
+      Offset(size.width * .50f, size.height * .92f)
+     )
+
+     // Quiet late-night stardust
+     val dust = Path().apply {
+      for (index in 1..64) {
+       val point = Offset(
+        size.width * ((index * 73) % 251) / 251f,
+        size.height * ((index * index * 13 + index * 29) % 199) / 199f
+       )
+       if ((point - orbit).getDistance() > radius * 1.25f) {
+        addOval(Rect(point, (.50f + index % 3 * .30f).dp.toPx()))
+       }
+      }
+     }
+     drawPath(dust, Color(0xFF8EA5D0).copy(alpha = .20f))
+
+     // Dim twinkling stars
+     val starPoints = listOf(
+      .09f to .19f, .16f to .60f, .24f to .15f, .31f to .38f,
+      .43f to .11f, .64f to .13f, .76f to .28f, .86f to .18f,
+      .88f to .58f, .14f to .82f, .82f to .80f
+     )
+     for ((index, point) in starPoints.withIndex()) {
+      val center = Offset(size.width * point.first, size.height * point.second)
+      if ((center - orbit).getDistance() <= radius * 1.35f) continue
+      val twinkle = if (reduced) 0.55f
+      else (0.28f + 0.52f * ((sin((starPhase * 2 * PI + index * 1.5f)).toFloat() + 1f) / 2f))
+      drawSparkleStar(
+       center = center,
+       r = minOf((1.8f + index % 3).dp.toPx(), radius * .11f),
+       color = Color(0xFFD6E2FA).copy(alpha = twinkle * .45f)
+      )
+     }
+
+     // Falling "Sandman / time-slipping" golden motes drifting slowly downward
+     val moteCount = 12
+     for (i in 0 until moteCount) {
+      val laneX = 0.08f + 0.84f * (((i * 67 + 19) % 97) / 97f)
+      val t = if (reduced) ((i * 0.13f + 0.25f) % 1f) else ((sleepCycle + i / moteCount.toFloat()) % 1f)
+      val sway = if (reduced) 0f else sin((t * 2 * PI + i * 1.3f)).toFloat() * 6.dp.toPx()
+      val moteCenter = Offset(size.width * laneX + sway, size.height * (.10f + .76f * t))
+      if ((moteCenter - orbit).getDistance() > radius * 1.15f) {
+       val moteAlpha = (if (reduced) 0.35f else sin(t * PI).toFloat().coerceIn(0f, 1f) * 0.48f)
+       val moteRadius = (1.1f + (i % 3) * 0.55f).dp.toPx()
+       drawCircle(Color(0xFFF3C67A).copy(alpha = moteAlpha), moteRadius, moteCenter)
+      }
+     }
+
+     // Calm breathing sleep ripples radiating outward
+     val ring1 = radius * (1.30f + 0.18f * breath)
+     val ring2 = radius * (1.58f + 0.28f * breath)
+     drawCircle(
+      color = Color(0xFFEAB86E).copy(alpha = .20f * (1f - breath * .50f)),
+      radius = ring1,
+      center = orbit,
+      style = Stroke(width = 1.6.dp.toPx())
+     )
+     drawCircle(
+      color = Color(0xFF7589C7).copy(alpha = .14f * (1f - breath * .55f)),
+      radius = ring2,
+      center = orbit,
+      style = Stroke(width = 1.2.dp.toPx())
+     )
+
+     // Celestial overdue clock dial: subtle circular track + orbiting amber lantern & fading trail
+     val dialRadius = radius * 1.18f
+     drawCircle(
+      color = Color(0xFF566596).copy(alpha = .24f),
+      radius = dialRadius,
+      center = orbit,
+      style = Stroke(width = 1.2.dp.toPx())
+     )
+     for (tick in 0 until 12) {
+      val tickRad = (-90f + tick * 30f) * (PI.toFloat() / 180f)
+      val tickPos = Offset(orbit.x + cos(tickRad) * dialRadius, orbit.y + sin(tickRad) * dialRadius)
+      val isCardinal = tick % 3 == 0
+      drawCircle(
+       color = Color(0xFF8EA1D6).copy(alpha = if (isCardinal) .48f else .22f),
+       radius = (if (isCardinal) 2.1f else 1.2f).dp.toPx(),
+       center = tickPos
+      )
+     }
+     val handAngleDeg = if (reduced) 55f else (sleepCycle * 360f - 90f)
+     val trailSweep = 88f
+     val trailSteps = 10
+     for (step in 0 until trailSteps) {
+      val frac = (step + 1) / trailSteps.toFloat()
+      val segSweep = trailSweep / trailSteps
+      val segStart = handAngleDeg - trailSweep + step * segSweep
+      drawArc(
+       color = Color(0xFFF3C378).copy(alpha = .05f + .42f * frac * frac),
+       startAngle = segStart,
+       sweepAngle = segSweep + 0.5f,
+       useCenter = false,
+       topLeft = Offset(orbit.x - dialRadius, orbit.y - dialRadius),
+       size = Size(dialRadius * 2f, dialRadius * 2f),
+       style = Stroke(width = 2.4.dp.toPx(), cap = StrokeCap.Round)
+      )
+     }
+     val handRad = handAngleDeg * (PI.toFloat() / 180f)
+     val lanternPos = Offset(orbit.x + cos(handRad) * dialRadius, orbit.y + sin(handRad) * dialRadius)
+     drawCircle(Color(0xFFF6C97E).copy(alpha = .28f), 8.dp.toPx(), lanternPos)
+     drawCircle(Color(0xFFFFE5B4), 3.3.dp.toPx(), lanternPos)
+
+     // Soft warm bedside-lantern halo around the moon
+     val haloRadius = radius * (1.72f + 0.16f * breath)
+     drawCircle(
+      Brush.radialGradient(
+       listOf(Color(0x3AF0B765), Color.Transparent),
+       center = orbit,
+       radius = haloRadius
+      ),
+      haloRadius,
+      orbit
+     )
+
+     // Distant dark cloud drifting behind the moon
+     drawSoftCloud(
+      center = Offset(size.width * .74f + cloudDrift2.dp.toPx(), size.height * .37f),
+      scale = radius * .64f,
+      baseColor = Color(0xFF141B30).copy(alpha = .42f),
+      highlightColor = Color(0xFF202A49).copy(alpha = .48f)
+     )
+
+     // Eclipsed golden-amber crescent moon: dark umbra sphere with soft earthshine + breathing shadow
+     val shadowShift = Offset(radius * (.44f - .05f * breath), -radius * (.36f - .04f * breath))
+     drawCircle(
+      brush = Brush.radialGradient(
+       colors = listOf(Color(0xFF141B33), Color(0xFF070A16)),
+       center = orbit - Offset(radius * .2f, radius * .2f),
+       radius = radius * 1.1f
+      ),
+      radius = radius * .98f,
+      center = orbit
+     )
+     drawCircle(
+      color = Color(0xFF445382).copy(alpha = .24f),
+      radius = radius * .98f,
+      center = orbit,
+      style = Stroke(width = 1.2.dp.toPx())
+     )
+     val eclipsedMoon = Path.combine(
+      PathOperation.Difference,
+      Path().apply { addOval(Rect(orbit, radius)) },
+      Path().apply { addOval(Rect(orbit + shadowShift, radius * .89f)) }
+     )
+     val moonBrush = Brush.linearGradient(
+      listOf(Color(0xFFFFF2D6), Color(0xFFF1BF74), Color(0xFFB5773A)),
+      start = orbit - Offset(radius, radius),
+      end = orbit + Offset(radius, radius)
+     )
+     drawPath(eclipsedMoon, moonBrush)
+     clipPath(eclipsedMoon) {
+      drawCircle(Color.White.copy(alpha = .24f), radius * .22f, orbit + Offset(-radius * .46f, radius * .12f))
+      drawCircle(Color.Black.copy(alpha = .10f), radius * .15f, orbit + Offset(-radius * .22f, radius * .46f))
+      drawCircle(Color.Black.copy(alpha = .08f), radius * .10f, orbit + Offset(-radius * .52f, -radius * .24f))
+     }
+
+     // Rising, swaying "Z" sleep glyphs floating up from the moon
+     val zOrigin = orbit + Offset(radius * .46f, -radius * .42f)
+     for (idx in 0 until 3) {
+      val t = if (reduced) (0.20f + idx * 0.28f) else ((sleepCycle + idx / 3f) % 1f)
+      val fade = if (reduced) (0.76f - idx * 0.16f) else sin(t * PI).toFloat().coerceIn(0f, 1f)
+      val swayX = if (reduced) 0f else sin((t * 2 * PI + idx * 1.4f)).toFloat() * radius * .08f
+      val zPos = Offset(
+       x = zOrigin.x + radius * (.20f + .09f * idx) * t + swayX,
+       y = zOrigin.y - radius * .92f * t
+      )
+      val zSize = radius * (.11f + .11f * t)
+      val zTilt = -10f + 14f * sin(t * PI).toFloat()
+      val zColor = Color(0xFFF6D496).copy(alpha = fade * .90f)
+      drawSleepZ(
+       center = zPos,
+       size = zSize,
+       angleDegrees = zTilt,
+       strokeWidth = (2.0f + 1.1f * t).dp.toPx(),
+       color = zColor
+      )
+     }
+
+     // Cozy dark foreground cloud tucking into the night horizon
+     drawSoftCloud(
+      center = Offset(size.width * .28f + cloudDrift1.dp.toPx(), size.height * .75f),
+      scale = radius * .94f,
+      baseColor = Color(0xFF0A0F1E).copy(alpha = .72f),
+      highlightColor = Color(0xFF17203B).copy(alpha = .76f)
+     )
+    }
+
+    SkyPhase.NIGHT, SkyPhase.WIND_DOWN, SkyPhase.RESTING -> {
      val (orbX, orbY) = when (phase) {
       SkyPhase.RESTING -> .50f to .56f
       SkyPhase.WIND_DOWN -> .54f to .49f
@@ -698,7 +944,6 @@ internal fun SkyIllustration(
      // Soft diagonal nebula / Milky Way wash
      val nebulaColor = when (phase) {
       SkyPhase.WIND_DOWN -> Color(0xFF8C7AE6)
-      SkyPhase.OVERDUE -> Color(0xFFE06C82)
       SkyPhase.RESTING -> Color(0xFF2E5C9E)
       else -> Color(0xFF3E78FF)
      }
@@ -714,12 +959,8 @@ internal fun SkyIllustration(
      )
 
      // Stardust background
-     val dustAlpha = when (phase) {
-      SkyPhase.OVERDUE -> .24f
-      SkyPhase.RESTING -> .48f
-      else -> .42f
-     }
-     val dustColor = if (phase == SkyPhase.OVERDUE) Color(0xFFFFD4DC) else Color(0xFFB9D7FB)
+     val dustAlpha = if (phase == SkyPhase.RESTING) .48f else .42f
+     val dustColor = Color(0xFFB9D7FB)
      val dust = Path().apply {
       for (index in 1..72) {
        val point = Offset(
@@ -739,12 +980,7 @@ internal fun SkyIllustration(
       .33f to .68f, .38f to .31f, .42f to .12f, .48f to .85f, .57f to .14f,
       .69f to .10f, .74f to .72f, .79f to .29f, .83f to .58f, .89f to .84f, .94f to .36f
      )
-     val starBaseTint = when (phase) {
-      SkyPhase.OVERDUE -> Color(0xFFFFDCE2)
-      SkyPhase.WIND_DOWN -> Color(0xFFEBE6FF)
-      else -> Color(0xFFE5F2FF)
-     }
-     val starDim = if (phase == SkyPhase.OVERDUE) 0.55f else 1f
+     val starBaseTint = if (phase == SkyPhase.WIND_DOWN) Color(0xFFEBE6FF) else Color(0xFFE5F2FF)
      for ((index, point) in starPoints.withIndex()) {
       val center = Offset(size.width * point.first, size.height * point.second)
       if ((center - orbit).getDistance() <= radius * 1.1f) continue
@@ -753,7 +989,7 @@ internal fun SkyIllustration(
       drawSparkleStar(
        center = center,
        r = minOf((2f + index % 4).dp.toPx(), radius * .15f),
-       color = starBaseTint.copy(alpha = twinkle * starDim)
+       color = starBaseTint.copy(alpha = twinkle)
       )
      }
 
@@ -773,9 +1009,8 @@ internal fun SkyIllustration(
       drawCircle(Color.White.copy(alpha = meteorAlpha), 2.2.dp.toPx(), start)
      }
 
-     // Moon halo + breathing rings for Wind-Down / Overdue
+     // Moon halo + breathing rings for Wind-Down
      val haloColor = when (phase) {
-      SkyPhase.OVERDUE -> Color(0x44FFB8C1)
       SkyPhase.WIND_DOWN -> Color(0x42A794FF)
       SkyPhase.RESTING -> Color(0x2A5BA8FF)
       else -> Color(0x403DC5FF)
@@ -783,8 +1018,8 @@ internal fun SkyIllustration(
      val haloRadius = radius * (1.75f + 0.22f * pulse)
      drawCircle(Brush.radialGradient(listOf(haloColor, Color.Transparent), center = orbit, radius = haloRadius), haloRadius, orbit)
 
-     if (phase == SkyPhase.WIND_DOWN || phase == SkyPhase.OVERDUE) {
-      val ringTint = if (phase == SkyPhase.OVERDUE) Color(0xFFFFB2BE) else Color(0xFFC5B8FF)
+     if (phase == SkyPhase.WIND_DOWN) {
+      val ringTint = Color(0xFFC5B8FF)
       val ring1 = radius * (1.24f + 0.20f * pulse)
       val ring2 = radius * (1.46f + 0.28f * pulse)
       drawCircle(ringTint.copy(alpha = .24f * (1f - pulse * .4f)), ring1, orbit, style = Stroke(width = 1.6.dp.toPx()))
@@ -792,11 +1027,7 @@ internal fun SkyIllustration(
      }
 
      // Moonlit drifting night clouds (behind moon for depth, one softly below)
-     val nightCloudTint = when (phase) {
-      SkyPhase.OVERDUE -> Color(0xFFE09BA9)
-      SkyPhase.WIND_DOWN -> Color(0xFFA7A3DB)
-      else -> Color(0xFF8BA7D6)
-     }
+     val nightCloudTint = if (phase == SkyPhase.WIND_DOWN) Color(0xFFA7A3DB) else Color(0xFF8BA7D6)
      drawSoftCloud(
       center = Offset(size.width * .72f + cloudDrift2.dp.toPx(), size.height * .36f),
       scale = radius * .62f,
@@ -811,7 +1042,6 @@ internal fun SkyIllustration(
       Path().apply { addOval(Rect(orbit + Offset(radius * .52f, -radius * .43f), radius * .88f)) }
      )
      val moonColors = when (phase) {
-      SkyPhase.OVERDUE -> listOf(Color(0xFFFFECEF), Color(0xFFFFB9C4), Color(0xFFE8869B))
       SkyPhase.WIND_DOWN -> listOf(Color(0xFFF2EEFF), Color(0xFFC5BEFF), Color(0xFF8C86E8))
       SkyPhase.RESTING -> listOf(Color(0xFFDCEBFF), Color(0xFF8BBCEB), Color(0xFF4F87C4))
       else -> listOf(Color(0xFFECFAFF), Color(0xFF9BE4FF), Color(0xFF49C6FC))
@@ -832,7 +1062,7 @@ internal fun SkyIllustration(
      drawSparkleStar(
       center = orbit + Offset(radius * .74f, -radius * .58f),
       r = minOf(4.2.dp.toPx(), radius * .16f) * (0.85f + 0.25f * pulse),
-      color = starBaseTint.copy(alpha = .85f * starDim)
+      color = starBaseTint.copy(alpha = .85f)
      )
 
      drawSoftCloud(
@@ -844,6 +1074,34 @@ internal fun SkyIllustration(
     }
    }
   }
+ }
+}
+
+private fun DrawScope.drawSleepZ(
+ center: Offset,
+ size: Float,
+ angleDegrees: Float,
+ strokeWidth: Float,
+ color: Color
+) {
+ val half = size * 0.5f
+ val zPath = Path().apply {
+  moveTo(center.x - half * 0.85f, center.y - half)
+  lineTo(center.x + half * 0.85f, center.y - half)
+  lineTo(center.x - half * 0.85f, center.y + half)
+  lineTo(center.x + half * 0.85f, center.y + half)
+ }
+ rotate(degrees = angleDegrees, pivot = center) {
+  drawPath(
+   path = zPath,
+   color = color.copy(alpha = color.alpha * 0.24f),
+   style = Stroke(width = strokeWidth * 2.4f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+  )
+  drawPath(
+   path = zPath,
+   color = color,
+   style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
+  )
  }
 }
 
